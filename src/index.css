@@ -22,7 +22,20 @@ body {
   box-sizing: border-box;
 }
 
+section {
+  scroll-margin-top: 84px;
+}
+
 button,
 a {
   transition: all 0.25s ease;
+}
+
+.scrollbar-hide::-webkit-scrollbar {
+  display: none;
+}
+
+.scrollbar-hide {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
 }

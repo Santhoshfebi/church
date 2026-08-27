@@ -1,1912 +1,1909 @@
-import { motion } from "framer-motion";
+import { useEffect, useRef, useState } from "react";
+
+import { AnimatePresence, motion } from "framer-motion";
+
 import {
+  ArrowLeft,
   ArrowRight,
   Baby,
+  BookMarked,
   BookOpen,
   CalendarDays,
+  Church,
   Clock3,
+  Coffee,
+  Heart,
   HeartHandshake,
+  Mail,
   MapPin,
+  MapPinned,
+  MessageCircle,
+  Mic2,
+  Music2,
+  Navigation,
+  Phone,
   Play,
+  Send,
+  Smile,
   Sparkles,
   Users,
-  Video,
-  Mic2,
-  CalendarCheck,
-  Church,
-  MapPinned,
-  Ticket,
-  BookMarked,
-  Navigation,
-  Coffee,
-  Smile,
-  Music2,
-  CircleHelp,
-  Phone,
-  Mail,
-  Send,
-  Heart,
-  MessageCircle,
+  UsersRound,
+  X,
 } from "lucide-react";
 
 import { FaFacebookF, FaInstagram, FaYoutube } from "react-icons/fa";
 
-const ministries = [
-  {
-    title: "Kids Ministry",
-    description:
-      "A safe, joyful environment where children can learn about Jesus, build friendships, and grow in faith.",
-    icon: Baby,
-  },
-  {
-    title: "Youth Ministry",
-    description:
-      "Helping young people discover their identity in Christ and build strong, lasting faith.",
-    icon: Users,
-  },
-  {
-    title: "Bible Study",
-    description:
-      "Growing deeper in God's Word through prayer, teaching, discussion, and community.",
-    icon: BookOpen,
-  },
-  {
-    title: "Prayer Ministry",
-    description:
-      "Standing together in prayer and believing God for healing, restoration, breakthrough, and hope.",
-    icon: HeartHandshake,
-  },
-];
+import Navbar from "../components/Navbar";
+import BlurredImage from "../components/BlurredImage";
 
-const sermons = [
-  {
-    id: 1,
-    title: "Walking By Faith",
-    speaker: "Pastor Name",
-    scripture: "2 Corinthians 5:7",
-    date: "August 23, 2026",
-    duration: "42 min",
-    image:
-      "https://images.unsplash.com/photo-1507692049790-de58290a4334?auto=format&fit=crop&w=1200&q=85",
-  },
-  {
-    id: 2,
-    title: "The Power of Grace",
-    speaker: "Pastor Name",
-    scripture: "Ephesians 2:8-9",
-    date: "August 16, 2026",
-    duration: "38 min",
-    image:
-      "https://images.unsplash.com/photo-1438232992991-995b7058bbb3?auto=format&fit=crop&w=1200&q=85",
-  },
-  {
-    id: 3,
-    title: "Jesus Is With Us",
-    speaker: "Pastor Name",
-    scripture: "Matthew 28:20",
-    date: "August 9, 2026",
-    duration: "45 min",
-    image:
-      "https://images.unsplash.com/photo-1473177104440-ffee2f376098?auto=format&fit=crop&w=1200&q=85",
-  },
-];
+import {
+  submitContactMessage,
+  submitPrayerRequest,
+} from "../services/churchFormService";
 
-const events = [
-  {
-    id: 1,
-    title: "Sunday Worship Celebration",
-    description:
-      "Come together as one church family for powerful worship, prayer, fellowship, and an encouraging message from God's Word.",
-    date: "30",
-    month: "AUG",
-    day: "Sunday",
-    time: "7:30 AM",
-    location: "New Grace Jesus With Us Church",
-    image:
-      "https://images.unsplash.com/photo-1438032005730-c779502df39b?auto=format&fit=crop&w=1400&q=85",
-    featured: true,
-  },
-  {
-    id: 2,
-    title: "Youth Gathering",
-    description:
-      "An evening for young people to connect, worship, grow in faith, and build meaningful friendships.",
-    date: "05",
-    month: "SEP",
-    day: "Saturday",
-    time: "6:00 PM",
-    location: "Church Campus",
-    image:
-      "https://images.unsplash.com/photo-1529070538774-1843cb3265df?auto=format&fit=crop&w=1000&q=85",
-  },
-  {
-    id: 3,
-    title: "Prayer Night",
-    description:
-      "A special evening dedicated to worship, intercession, thanksgiving, and seeking God's presence together.",
-    date: "11",
-    month: "SEP",
-    day: "Friday",
-    time: "7:00 PM",
-    location: "Main Sanctuary",
-    image:
-      "https://images.unsplash.com/photo-1507692049790-de58290a4334?auto=format&fit=crop&w=1000&q=85",
-  },
-  {
-    id: 4,
-    title: "Family Fellowship",
-    description:
-      "A joyful time for families to connect, share food, build friendships, and enjoy community together.",
-    date: "19",
-    month: "SEP",
-    day: "Saturday",
-    time: "5:00 PM",
-    location: "Church Campus",
-    image:
-      "https://images.unsplash.com/photo-1511632765486-a01980e01a18?auto=format&fit=crop&w=1000&q=85",
-  },
-];
+import { getPublicEvents } from "../services/eventService";
+
+import {
+  getPublicSermons,
+  getYouTubeEmbedUrl,
+  getYouTubeThumbnail,
+} from "../services/sermonService";
+
+import { getPublicMinistries } from "../services/ministryService";
+
+import { getChurchSettings } from "../services/churchSettingsService";
+
+import { getPublicBooks } from "../services/bookService";
 
 export default function HomePage() {
+  /* ====================================================================== */
+  /* CHURCH SETTINGS                                                        */
+  /* ====================================================================== */
+
+  const [churchSettings, setChurchSettings] = useState(null);
+
+  /* ====================================================================== */
+  /* MINISTRIES                                                             */
+  /* ====================================================================== */
+
+  const [publicMinistries, setPublicMinistries] = useState([]);
+
+  const [ministriesLoading, setMinistriesLoading] = useState(true);
+
+  const [ministriesError, setMinistriesError] = useState("");
+
+  const [selectedMinistry, setSelectedMinistry] = useState(null);
+
+  /* ====================================================================== */
+  /* BOOKS                                                                  */
+  /* ====================================================================== */
+
+  const [publicBooks, setPublicBooks] = useState([]);
+
+  const [booksLoading, setBooksLoading] = useState(true);
+
+  const [booksError, setBooksError] = useState("");
+
+  const [selectedBook, setSelectedBook] = useState(null);
+
+  /* ====================================================================== */
+  /* SERMONS                                                                */
+  /* ====================================================================== */
+
+  const [publicSermons, setPublicSermons] = useState([]);
+
+  const [sermonsLoading, setSermonsLoading] = useState(true);
+
+  const [sermonsError, setSermonsError] = useState("");
+
+  const [selectedSermon, setSelectedSermon] = useState(null);
+
+  /* ====================================================================== */
+  /* EVENTS                                                                 */
+  /* ====================================================================== */
+
+  const [publicEvents, setPublicEvents] = useState([]);
+
+  const [eventsLoading, setEventsLoading] = useState(true);
+
+  const [eventsError, setEventsError] = useState("");
+
+  /* ====================================================================== */
+  /* PRAYER FORM                                                            */
+  /* ====================================================================== */
+
+  const [prayerForm, setPrayerForm] = useState({
+    name: "",
+    email: "",
+    prayerRequest: "",
+    wantsContact: false,
+  });
+
+  const [prayerSubmitting, setPrayerSubmitting] = useState(false);
+
+  const [prayerStatus, setPrayerStatus] = useState("");
+
+  /* ====================================================================== */
+  /* CONTACT FORM                                                           */
+  /* ====================================================================== */
+
+  const [contactForm, setContactForm] = useState({
+    name: "",
+    email: "",
+    phone: "",
+    subject: "General Question",
+    message: "",
+  });
+
+  const [contactSubmitting, setContactSubmitting] = useState(false);
+
+  const [contactStatus, setContactStatus] = useState("");
+
+  /* ====================================================================== */
+  /* LOAD PAGE DATA                                                         */
+  /* ====================================================================== */
+
+  useEffect(() => {
+    const loadPageData = async () => {
+      await Promise.allSettled([
+        loadChurchSettings(),
+        loadMinistries(),
+        loadBooks(),
+        loadSermons(),
+        loadEvents(),
+      ]);
+    };
+
+    loadPageData();
+  }, []);
+
+  const loadChurchSettings = async () => {
+    try {
+      const data = await getChurchSettings();
+
+      setChurchSettings(data);
+    } catch (error) {
+      console.error("Church settings error:", error);
+    }
+  };
+
+  const loadMinistries = async () => {
+    try {
+      setMinistriesLoading(true);
+      setMinistriesError("");
+
+      const data = await getPublicMinistries();
+
+      setPublicMinistries(data || []);
+    } catch (error) {
+      console.error("Public ministries error:", error);
+
+      setMinistriesError("Unable to load ministries right now.");
+    } finally {
+      setMinistriesLoading(false);
+    }
+  };
+
+  const loadBooks = async () => {
+    try {
+      setBooksLoading(true);
+      setBooksError("");
+
+      const data = await getPublicBooks();
+
+      setPublicBooks(data || []);
+    } catch (error) {
+      console.error("Public books error:", error);
+
+      setBooksError("Unable to load published books right now.");
+    } finally {
+      setBooksLoading(false);
+    }
+  };
+
+  const loadSermons = async () => {
+    try {
+      setSermonsLoading(true);
+      setSermonsError("");
+
+      const data = await getPublicSermons();
+
+      setPublicSermons(data || []);
+    } catch (error) {
+      console.error("Public sermons error:", error);
+
+      setSermonsError("Unable to load sermons right now.");
+    } finally {
+      setSermonsLoading(false);
+    }
+  };
+
+  const loadEvents = async () => {
+    try {
+      setEventsLoading(true);
+      setEventsError("");
+
+      const data = await getPublicEvents();
+
+      setPublicEvents(data || []);
+    } catch (error) {
+      console.error("Public events error:", error);
+
+      setEventsError("Unable to load upcoming events.");
+    } finally {
+      setEventsLoading(false);
+    }
+  };
+
+  /* ====================================================================== */
+  /* SETTINGS FALLBACKS                                                     */
+  /* ====================================================================== */
+
+  const churchName =
+    churchSettings?.church_name || "New Grace Jesus With Us Church";
+
+  const shortName = churchSettings?.short_name || "New Grace";
+
+  const heroTitle = churchSettings?.hero_title || "Jesus With Us.";
+
+  const heroHighlight = churchSettings?.hero_highlight || "Grace For Everyone.";
+
+  const heroDescription =
+    churchSettings?.hero_description ||
+    "A Christ-centered community where you can encounter Jesus, grow in faith, find meaningful relationships, and discover the transforming power of God's grace.";
+
+  const serviceDay = churchSettings?.service_day || "Sunday";
+
+  const serviceTime = churchSettings?.service_time || "10:00 AM";
+
+  const churchAddress = churchSettings?.address || "Church Location";
+
+  const mapsUrl = churchSettings?.google_maps_url || "https://maps.google.com";
+
+  const phone = churchSettings?.phone || "+91 00000 00000";
+
+  const email = churchSettings?.email || "hello@newgracechurch.org";
+
+  const facebookUrl = churchSettings?.facebook_url || "#";
+
+  const instagramUrl = churchSettings?.instagram_url || "#";
+
+  const youtubeUrl = churchSettings?.youtube_url || "#";
+
+  /* ====================================================================== */
+  /* DEFAULT MINISTRY                                                       */
+  /* ====================================================================== */
+
+  useEffect(() => {
+    if (publicMinistries.length === 0) {
+      setSelectedMinistry(null);
+      return;
+    }
+
+    const exists =
+      selectedMinistry &&
+      publicMinistries.some((ministry) => ministry.id === selectedMinistry.id);
+
+    if (!exists) {
+      setSelectedMinistry(publicMinistries[0]);
+    }
+  }, [publicMinistries, selectedMinistry]);
+
+  /* ====================================================================== */
+  /* FEATURED SERMON                                                        */
+  /* ====================================================================== */
+
+  const featuredSermon =
+    publicSermons.find((sermon) => sermon.is_featured) ||
+    publicSermons[0] ||
+    null;
+
+  const recentSermons = featuredSermon
+    ? publicSermons
+        .filter((sermon) => sermon.id !== featuredSermon.id)
+        .slice(0, 6)
+    : [];
+
+  /* ====================================================================== */
+  /* FEATURED EVENT                                                         */
+  /* ====================================================================== */
+
+  const featuredEvent =
+    publicEvents.find((event) => event.is_featured) || publicEvents[0] || null;
+
+  const upcomingEvents = featuredEvent
+    ? publicEvents.filter((event) => event.id !== featuredEvent.id).slice(0, 6)
+    : [];
+
+  /* ====================================================================== */
+  /* MODAL BODY LOCK                                                        */
+  /* ====================================================================== */
+
+  useEffect(() => {
+    document.body.style.overflow =
+      selectedSermon || selectedBook ? "hidden" : "";
+
+    return () => {
+      document.body.style.overflow = "";
+    };
+  }, [selectedSermon, selectedBook]);
+
+  /* ====================================================================== */
+  /* PRAYER SUBMIT                                                         */
+  /* ====================================================================== */
+
+  const handlePrayerSubmit = async (e) => {
+    e.preventDefault();
+
+    if (!prayerForm.prayerRequest.trim()) {
+      setPrayerStatus("Please enter your prayer request.");
+
+      return;
+    }
+
+    try {
+      setPrayerSubmitting(true);
+      setPrayerStatus("");
+
+      await submitPrayerRequest(prayerForm);
+
+      setPrayerForm({
+        name: "",
+        email: "",
+        prayerRequest: "",
+        wantsContact: false,
+      });
+
+      setPrayerStatus("Thank you. Your prayer request has been received.");
+    } catch (error) {
+      console.error("Prayer request error:", error);
+
+      setPrayerStatus("Something went wrong. Please try again.");
+    } finally {
+      setPrayerSubmitting(false);
+    }
+  };
+
+  /* ====================================================================== */
+  /* CONTACT SUBMIT                                                        */
+  /* ====================================================================== */
+
+  const handleContactSubmit = async (e) => {
+    e.preventDefault();
+
+    if (
+      !contactForm.name.trim() ||
+      !contactForm.email.trim() ||
+      !contactForm.message.trim()
+    ) {
+      setContactStatus("Please complete your name, email, and message.");
+
+      return;
+    }
+
+    try {
+      setContactSubmitting(true);
+      setContactStatus("");
+
+      await submitContactMessage(contactForm);
+
+      setContactForm({
+        name: "",
+        email: "",
+        phone: "",
+        subject: "General Question",
+        message: "",
+      });
+
+      setContactStatus("Thank you. Your message has been sent.");
+    } catch (error) {
+      console.error("Contact form error:", error);
+
+      setContactStatus("Something went wrong. Please try again.");
+    } finally {
+      setContactSubmitting(false);
+    }
+  };
+
   return (
     <main className="min-h-screen bg-white">
-      {/* HERO */}
+      <Navbar />
+
+      {/* ================================================================== */}
+      {/* HERO                                                               */}
+      {/* ================================================================== */}
+
       <section className="relative min-h-screen overflow-hidden bg-zinc-950 text-white">
         <div
           className="absolute inset-0 bg-cover bg-center"
           style={{
             backgroundImage:
-              "url('https://images.unsplash.com/photo-1507692049790-de58290a4334?auto=format&fit=crop&w=2000&q=85')",
+              "url('https://images.unsplash.com/photo-1507692049790-de58290a4334?auto=format&fit=crop&w=2200&q=90')",
           }}
         />
 
-        <div className="absolute inset-0 bg-black/65" />
+        <div className="absolute inset-0 bg-gradient-to-r from-black/90 via-black/65 to-black/30" />
+        <div className="absolute inset-0 bg-gradient-to-t from-black/95 via-transparent to-black/20" />
 
-        <div className="absolute -left-40 top-32 h-96 w-96 rounded-full bg-amber-400/10 blur-3xl" />
-        <div className="absolute -right-40 bottom-10 h-96 w-96 rounded-full bg-white/5 blur-3xl" />
-
-        {/* NAVBAR */}
-        <header className="relative z-20 border-b border-white/10">
-          <div className="mx-auto flex max-w-7xl items-center justify-between px-6 py-5 lg:px-8">
-            <a href="/" className="flex items-center gap-3">
-              <div className="flex h-11 w-11 items-center justify-center rounded-full border border-white/20 bg-white/10">
-                <span className="text-xl font-semibold text-amber-300">✝</span>
-              </div>
-
-              <div>
-                <p className="text-sm font-semibold tracking-wide sm:text-base">
-                  New Grace
-                </p>
-
-                <p className="text-[10px] uppercase tracking-[0.22em] text-white/60 sm:text-xs">
-                  Jesus With Us Church
-                </p>
-              </div>
-            </a>
-
-            <nav className="hidden items-center gap-8 text-sm font-medium text-white/80 lg:flex">
-              <a href="#home" className="hover:text-white">
-                Home
-              </a>
-
-              <a href="#about" className="hover:text-white">
-                About
-              </a>
-
-              <a href="#ministries" className="hover:text-white">
-                Ministries
-              </a>
-
-              <a href="#sermons" className="hover:text-white">
-                Sermons
-              </a>
-
-              <a href="#events" className="hover:text-white">
-                Events
-              </a>
-
-              <a href="#contact" className="hover:text-white">
-                Contact
-              </a>
-            </nav>
-
-            <a
-              href="#visit"
-              className="hidden rounded-full bg-amber-300 px-6 py-3 text-sm font-semibold text-zinc-950 hover:bg-amber-200 sm:inline-flex"
-            >
-              Plan Your Visit
-            </a>
-          </div>
-        </header>
-
-        {/* HERO CONTENT */}
         <div
           id="home"
-          className="relative z-10 mx-auto flex min-h-[calc(100vh-85px)] max-w-7xl items-center px-6 py-20 lg:px-8"
+          className="relative z-10 mx-auto flex min-h-screen max-w-7xl items-center px-6 pb-20 pt-32 lg:px-8"
         >
           <div className="max-w-4xl">
             <motion.div
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.6 }}
-              className="mb-6 inline-flex items-center rounded-full border border-white/15 bg-white/10 px-4 py-2 text-xs font-medium uppercase tracking-[0.18em] text-amber-200 backdrop-blur-md"
+              initial={{
+                opacity: 0,
+                y: 20,
+              }}
+              animate={{
+                opacity: 1,
+                y: 0,
+              }}
+              className="inline-flex items-center gap-2 rounded-full border border-amber-300/30 bg-amber-300/10 px-4 py-2 text-xs font-semibold uppercase tracking-[0.18em] text-amber-200 backdrop-blur-md"
             >
-              A place of faith, hope & grace
+              <Church size={15} />
+              Welcome To {shortName}
             </motion.div>
 
             <motion.h1
-              initial={{ opacity: 0, y: 30 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.7, delay: 0.1 }}
-              className="max-w-4xl text-5xl font-semibold leading-[1.05] tracking-tight sm:text-6xl lg:text-8xl"
+              initial={{
+                opacity: 0,
+                y: 30,
+              }}
+              animate={{
+                opacity: 1,
+                y: 0,
+              }}
+              className="mt-7 text-5xl font-semibold leading-[1.03] tracking-[-0.04em] sm:text-6xl lg:text-8xl"
             >
-              Jesus With Us.
-              <span className="block text-amber-300">Grace For Everyone.</span>
+              {heroTitle}
+
+              <span className="block text-amber-300">{heroHighlight}</span>
             </motion.h1>
 
-            <motion.p
-              initial={{ opacity: 0, y: 30 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.7, delay: 0.2 }}
-              className="mt-8 max-w-2xl text-base leading-8 text-white/70 sm:text-lg"
-            >
-              Welcome to New Grace Jesus With Us Church — a community where
-              people can encounter Jesus, grow in faith, discover purpose, and
-              experience the transforming power of God's grace.
-            </motion.p>
+            <p className="mt-8 max-w-2xl text-base leading-8 text-white/65 sm:text-lg">
+              {heroDescription}
+            </p>
 
-            <motion.div
-              initial={{ opacity: 0, y: 30 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.7, delay: 0.3 }}
-              className="mt-10 flex flex-col gap-4 sm:flex-row"
-            >
+            <div className="mt-9 flex flex-col gap-3 sm:flex-row">
               <a
                 href="#visit"
-                className="inline-flex items-center justify-center gap-2 rounded-full bg-amber-300 px-7 py-4 font-semibold text-zinc-950 hover:bg-amber-200"
+                className="inline-flex items-center justify-center gap-3 rounded-xl bg-amber-300 px-6 py-3.5 text-sm font-semibold text-zinc-950"
               >
                 Plan Your Visit
-                <ArrowRight size={18} />
+                <ArrowRight size={17} />
               </a>
 
               <a
                 href="#sermons"
-                className="inline-flex items-center justify-center gap-2 rounded-full border border-white/20 bg-white/10 px-7 py-4 font-semibold text-white backdrop-blur-md hover:bg-white/15"
+                className="inline-flex items-center justify-center gap-3 rounded-xl border border-white/20 bg-white/10 px-6 py-3.5 text-sm font-semibold text-white backdrop-blur-md"
               >
-                <Play size={18} />
+                <Play size={16} />
                 Watch Latest Message
               </a>
-            </motion.div>
+            </div>
 
-            <motion.div
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              transition={{ duration: 0.8, delay: 0.55 }}
-              className="mt-16 grid max-w-3xl gap-5 border-t border-white/15 pt-8 sm:grid-cols-3"
-            >
-              <div className="flex gap-3">
-                <Clock3 className="mt-1 text-amber-300" size={20} />
-
-                <div>
-                  <p className="text-xs uppercase tracking-widest text-white/50">
-                    Sunday Service
-                  </p>
-
-                  <p className="mt-1 font-medium">7:30 AM</p>
-                </div>
+            <div className="mt-10 flex flex-wrap gap-x-8 gap-y-4 text-sm text-white/55">
+              <div className="flex items-center gap-2">
+                <Clock3 size={16} className="text-amber-300" />
+                {serviceDay} • {serviceTime}
               </div>
 
-              <div className="flex gap-3">
-                <CalendarDays className="mt-1 text-amber-300" size={20} />
+              <div className="flex items-center gap-2">
+                <MapPin size={16} className="text-amber-300" />
 
-                <div>
-                  <p className="text-xs uppercase tracking-widest text-white/50">
-                    Join Us
-                  </p>
-
-                  <p className="mt-1 font-medium">Every Sunday</p>
-                </div>
+                {churchName}
               </div>
-
-              <div className="flex gap-3">
-                <MapPin className="mt-1 text-amber-300" size={20} />
-
-                <div>
-                  <p className="text-xs uppercase tracking-widest text-white/50">
-                    Location
-                  </p>
-
-                  <p className="mt-1 font-medium">Zion Nagar</p>
-                </div>
-              </div>
-            </motion.div>
+            </div>
           </div>
         </div>
       </section>
 
-      {/* ABOUT */}
-      <section
-        id="about"
-        className="overflow-hidden bg-[#f7f4ed] px-6 py-24 sm:py-32 lg:px-8"
-      >
+      {/* ================================================================== */}
+      {/* ABOUT                                                              */}
+      {/* ================================================================== */}
+
+      <section id="about" className="bg-[#f7f4ed] px-6 py-24 sm:py-32 lg:px-8">
         <div className="mx-auto grid max-w-7xl gap-16 lg:grid-cols-2 lg:items-center">
-          {/* IMAGES */}
-          <motion.div
-            initial={{ opacity: 0, x: -40 }}
-            whileInView={{ opacity: 1, x: 0 }}
-            viewport={{ once: true, amount: 0.2 }}
-            transition={{ duration: 0.7 }}
-            className="relative"
-          >
-            <div className="overflow-hidden rounded-[2rem]">
-              <img
-                src="https://images.unsplash.com/photo-1438232992991-995b7058bbb3?auto=format&fit=crop&w=1200&q=85"
-                alt="Church worship"
-                className="h-[520px] w-full object-cover"
-              />
-            </div>
+          <div className="relative overflow-hidden rounded-[2rem]">
+            <img
+              src="https://images.unsplash.com/photo-1438232992991-995b7058bbb3?auto=format&fit=crop&w=1200&q=85"
+              alt="Church worship"
+              className="h-[520px] w-full object-cover"
+            />
+          </div>
 
-            <div className="absolute -bottom-8 -right-4 hidden w-52 overflow-hidden rounded-3xl border-8 border-[#f7f4ed] sm:block lg:-right-10">
-              <img
-                src="https://images.unsplash.com/photo-1490730141103-6cac27aaab94?auto=format&fit=crop&w=700&q=85"
-                alt="Church community"
-                className="h-64 w-full object-cover"
-              />
-            </div>
-
-            <div className="absolute left-6 top-6 rounded-2xl bg-white/95 px-5 py-4 shadow-xl backdrop-blur">
-              <p className="text-3xl font-semibold text-zinc-900">Jesus</p>
-              <p className="text-sm text-zinc-500">is at the center.</p>
-            </div>
-          </motion.div>
-
-          {/* CONTENT */}
-          <motion.div
-            initial={{ opacity: 0, x: 40 }}
-            whileInView={{ opacity: 1, x: 0 }}
-            viewport={{ once: true, amount: 0.2 }}
-            transition={{ duration: 0.7 }}
-            className="lg:pl-8"
-          >
-            <div className="inline-flex items-center gap-2 text-sm font-semibold uppercase tracking-[0.22em] text-amber-700">
-              <Sparkles size={17} />
+          <div>
+            <p className="text-sm font-semibold uppercase tracking-[0.22em] text-amber-700">
               Who We Are
-            </div>
+            </p>
 
-            <h2 className="mt-5 text-4xl font-semibold leading-tight tracking-tight text-zinc-900 sm:text-5xl lg:text-6xl">
+            <h2 className="mt-5 text-4xl font-semibold tracking-tight sm:text-5xl lg:text-6xl">
               A church where everyone can experience God's grace.
             </h2>
 
             <p className="mt-7 text-lg leading-8 text-zinc-600">
-              New Grace Jesus With Us Church is a Christ-centered community
-              passionate about loving God, loving people, and sharing the hope
-              found in Jesus.
-            </p>
-
-            <p className="mt-5 leading-8 text-zinc-500">
-              Whether you've followed Jesus for many years, are returning to
-              church, or are simply searching for answers, you are welcome here.
-              We want every person to find family, grow spiritually, and
-              discover God's purpose for their life.
+              {churchName} is a Christ-centered community passionate about
+              loving God, loving people, and sharing the hope found in Jesus.
             </p>
 
             <div className="mt-9 grid gap-5 sm:grid-cols-2">
-              <div className="rounded-2xl border border-zinc-200/70 bg-white p-6">
-                <div className="mb-4 flex h-11 w-11 items-center justify-center rounded-full bg-amber-100 text-amber-800">
-                  <HeartHandshake size={21} />
-                </div>
+              <AboutCard
+                icon={HeartHandshake}
+                title="Come As You Are"
+                description="You are welcome here, wherever you are in your journey."
+              />
 
-                <h3 className="font-semibold text-zinc-900">Come As You Are</h3>
-
-                <p className="mt-2 text-sm leading-6 text-zinc-500">
-                  You don't have to have everything figured out before walking
-                  through our doors.
-                </p>
-              </div>
-
-              <div className="rounded-2xl border border-zinc-200/70 bg-white p-6">
-                <div className="mb-4 flex h-11 w-11 items-center justify-center rounded-full bg-amber-100 text-amber-800">
-                  <Users size={21} />
-                </div>
-
-                <h3 className="font-semibold text-zinc-900">Find Community</h3>
-
-                <p className="mt-2 text-sm leading-6 text-zinc-500">
-                  Build meaningful relationships and grow together as one church
-                  family.
-                </p>
-              </div>
+              <AboutCard
+                icon={Users}
+                title="Find Community"
+                description="Build meaningful relationships and grow together."
+              />
             </div>
-
-            <a
-              href="#mission"
-              className="mt-9 inline-flex items-center gap-2 font-semibold text-zinc-900 hover:gap-3"
-            >
-              Learn more about our church
-              <ArrowRight size={18} />
-            </a>
-          </motion.div>
-        </div>
-      </section>
-
-      {/* MINISTRIES */}
-      <section id="ministries" className="bg-white px-6 py-24 sm:py-32 lg:px-8">
-        <div className="mx-auto max-w-7xl">
-          <motion.div
-            initial={{ opacity: 0, y: 30 }}
-            whileInView={{ opacity: 1, y: 0 }}
-            viewport={{ once: true }}
-            transition={{ duration: 0.6 }}
-            className="mx-auto max-w-3xl text-center"
-          >
-            <p className="text-sm font-semibold uppercase tracking-[0.22em] text-amber-700">
-              Find Your Place
-            </p>
-
-            <h2 className="mt-5 text-4xl font-semibold tracking-tight text-zinc-900 sm:text-5xl lg:text-6xl">
-              There's a ministry for everyone.
-            </h2>
-
-            <p className="mx-auto mt-6 max-w-2xl text-lg leading-8 text-zinc-500">
-              Church is more than attending a Sunday service. It's about growing
-              together, serving together, and doing life together.
-            </p>
-          </motion.div>
-
-          <div className="mt-16 grid gap-6 md:grid-cols-2 xl:grid-cols-4">
-            {ministries.map((ministry, index) => {
-              const Icon = ministry.icon;
-
-              return (
-                <motion.article
-                  key={ministry.title}
-                  initial={{ opacity: 0, y: 40 }}
-                  whileInView={{ opacity: 1, y: 0 }}
-                  viewport={{ once: true }}
-                  transition={{
-                    duration: 0.5,
-                    delay: index * 0.08,
-                  }}
-                  className="group rounded-[2rem] border border-zinc-200 bg-white p-8 transition duration-300 hover:-translate-y-2 hover:border-amber-200 hover:shadow-2xl hover:shadow-zinc-200/60"
-                >
-                  <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-[#f7f4ed] text-amber-800 transition group-hover:bg-amber-300 group-hover:text-zinc-950">
-                    <Icon size={25} />
-                  </div>
-
-                  <h3 className="mt-8 text-2xl font-semibold tracking-tight text-zinc-900">
-                    {ministry.title}
-                  </h3>
-
-                  <p className="mt-4 leading-7 text-zinc-500">
-                    {ministry.description}
-                  </p>
-
-                  <button className="mt-8 inline-flex items-center gap-2 text-sm font-semibold text-zinc-900">
-                    Learn More
-                    <ArrowRight
-                      size={16}
-                      className="transition-transform group-hover:translate-x-1"
-                    />
-                  </button>
-                </motion.article>
-              );
-            })}
           </div>
         </div>
       </section>
 
-      {/* MISSION */}
+      {/* ================================================================== */}
+      {/* MINISTRIES                                                         */}
+      {/* ================================================================== */}
+
+      <section id="ministries" className="bg-white px-6 py-24 sm:py-32 lg:px-8">
+        <div className="mx-auto max-w-7xl">
+          <SectionHeading
+            eyebrow="Our Ministries"
+            title="Find where you belong."
+            description="Discover communities where you can grow in faith, build friendships, serve others, and walk with Jesus together."
+          />
+
+          {ministriesLoading ? (
+            <LoadingBox icon={UsersRound} text="Loading ministries..." />
+          ) : ministriesError ? (
+            <ErrorBox text={ministriesError} />
+          ) : publicMinistries.length === 0 ? (
+            <EmptyBox
+              icon={UsersRound}
+              title="Ministries are coming soon."
+              text="Check back soon to discover ways to connect and serve."
+            />
+          ) : (
+            <>
+              <MinistryCarousel
+                ministries={publicMinistries}
+                selectedMinistry={selectedMinistry}
+                onSelect={setSelectedMinistry}
+              />
+
+              <MinistrySpotlight ministry={selectedMinistry} />
+            </>
+          )}
+        </div>
+      </section>
+
+      {/* ================================================================== */}
+      {/* BOOKS                                                              */}
+      {/* ================================================================== */}
+
+      <section
+        id="books"
+        className="overflow-hidden bg-[#f7f4ed] px-6 py-24 sm:py-32 lg:px-8"
+      >
+        <div className="mx-auto max-w-7xl">
+          <SectionHeading
+            eyebrow="Published Books"
+            title="Books to strengthen your faith."
+            description="Explore publications from our church and ministry leaders created to encourage, equip, and help you grow deeper in God's Word."
+          />
+
+          {booksLoading ? (
+            <LoadingBox icon={BookOpen} text="Loading books..." />
+          ) : booksError ? (
+            <ErrorBox text={booksError} />
+          ) : publicBooks.length === 0 ? (
+            <EmptyBox
+              icon={BookOpen}
+              title="No books published yet."
+              text="Check back soon for new publications."
+            />
+          ) : (
+            <BooksCarousel books={publicBooks} onSelectBook={setSelectedBook} />
+          )}
+        </div>
+      </section>
+
+      {/* ================================================================== */}
+      {/* MISSION                                                            */}
+      {/* ================================================================== */}
+
       <section
         id="mission"
-        className="relative overflow-hidden bg-zinc-950 px-6 py-24 text-white sm:py-32 lg:px-8"
+        className="bg-zinc-950 px-6 py-24 text-white sm:py-32 lg:px-8"
       >
-        <div className="absolute left-0 top-0 h-96 w-96 rounded-full bg-amber-300/5 blur-3xl" />
-
-        <div className="absolute bottom-0 right-0 h-96 w-96 rounded-full bg-amber-300/5 blur-3xl" />
-
-        <div className="relative mx-auto max-w-7xl">
-          <div className="grid gap-14 lg:grid-cols-[0.8fr_1.2fr] lg:items-start">
-            <motion.div
-              initial={{ opacity: 0, y: 30 }}
-              whileInView={{ opacity: 1, y: 0 }}
-              viewport={{ once: true }}
-              transition={{ duration: 0.6 }}
-            >
+        <div className="mx-auto max-w-7xl">
+          <div className="grid gap-14 lg:grid-cols-[0.8fr_1.2fr]">
+            <div>
               <p className="text-sm font-semibold uppercase tracking-[0.22em] text-amber-300">
                 Our Mission
               </p>
 
-              <h2 className="mt-5 text-4xl font-semibold tracking-tight sm:text-5xl">
+              <h2 className="mt-5 text-4xl font-semibold sm:text-5xl">
                 Helping people know Jesus and live transformed lives.
               </h2>
-            </motion.div>
+            </div>
 
             <div className="grid gap-5 sm:grid-cols-3">
-              <motion.div
-                initial={{ opacity: 0, y: 30 }}
-                whileInView={{ opacity: 1, y: 0 }}
-                viewport={{ once: true }}
-                transition={{ duration: 0.5, delay: 0.1 }}
-                className="rounded-3xl border border-white/10 bg-white/5 p-7"
-              >
-                <span className="text-sm font-semibold text-amber-300">01</span>
+              <MissionCard
+                number="01"
+                title="Encounter Jesus"
+                text="Experience the love and presence of God."
+              />
 
-                <h3 className="mt-8 text-xl font-semibold">Encounter Jesus</h3>
+              <MissionCard
+                number="02"
+                title="Grow Together"
+                text="Grow through Scripture, prayer, worship, and community."
+              />
 
-                <p className="mt-3 text-sm leading-7 text-white/55">
-                  Creating an atmosphere where people can experience the love,
-                  presence, and power of God.
-                </p>
-              </motion.div>
-
-              <motion.div
-                initial={{ opacity: 0, y: 30 }}
-                whileInView={{ opacity: 1, y: 0 }}
-                viewport={{ once: true }}
-                transition={{ duration: 0.5, delay: 0.2 }}
-                className="rounded-3xl border border-white/10 bg-white/5 p-7"
-              >
-                <span className="text-sm font-semibold text-amber-300">02</span>
-
-                <h3 className="mt-8 text-xl font-semibold">Grow Together</h3>
-
-                <p className="mt-3 text-sm leading-7 text-white/55">
-                  Building strong disciples through Scripture, prayer,
-                  fellowship, worship, and genuine relationships.
-                </p>
-              </motion.div>
-
-              <motion.div
-                initial={{ opacity: 0, y: 30 }}
-                whileInView={{ opacity: 1, y: 0 }}
-                viewport={{ once: true }}
-                transition={{ duration: 0.5, delay: 0.3 }}
-                className="rounded-3xl border border-white/10 bg-white/5 p-7"
-              >
-                <span className="text-sm font-semibold text-amber-300">03</span>
-
-                <h3 className="mt-8 text-xl font-semibold">Impact Our World</h3>
-
-                <p className="mt-3 text-sm leading-7 text-white/55">
-                  Sharing God's grace beyond the walls of the church through
-                  compassion, service, and the Gospel.
-                </p>
-              </motion.div>
+              <MissionCard
+                number="03"
+                title="Impact Our World"
+                text="Share God's grace through service and the Gospel."
+              />
             </div>
           </div>
         </div>
       </section>
 
-      {/* NEXT SECTIONS */}
-      {/* SERMONS */}
+      {/* ================================================================== */}
+      {/* SERMONS                                                            */}
+      {/* ================================================================== */}
+
       <section
         id="sermons"
-        className="overflow-hidden bg-[#f7f4ed] px-6 py-24 sm:py-32 lg:px-8"
+        className="bg-[#f7f4ed] px-6 py-24 sm:py-32 lg:px-8"
       >
         <div className="mx-auto max-w-7xl">
-          {/* Heading */}
-          <motion.div
-            initial={{ opacity: 0, y: 30 }}
-            whileInView={{ opacity: 1, y: 0 }}
-            viewport={{ once: true }}
-            transition={{ duration: 0.6 }}
-            className="flex flex-col gap-8 lg:flex-row lg:items-end lg:justify-between"
-          >
-            <div className="max-w-3xl">
-              <div className="inline-flex items-center gap-2 text-sm font-semibold uppercase tracking-[0.22em] text-amber-700">
-                <Mic2 size={17} />
-                Messages
-              </div>
+          <SectionHeading
+            eyebrow="Messages"
+            title="Be encouraged by God's Word."
+            description="Watch our latest messages and discover biblical teaching designed to help you grow in faith."
+          />
 
-              <h2 className="mt-5 text-4xl font-semibold tracking-tight text-zinc-900 sm:text-5xl lg:text-6xl">
-                Be encouraged by God's Word.
-              </h2>
+          {sermonsLoading ? (
+            <LoadingBox icon={Play} text="Loading messages..." />
+          ) : sermonsError ? (
+            <ErrorBox text={sermonsError} />
+          ) : !featuredSermon ? (
+            <EmptyBox
+              icon={BookOpen}
+              title="No sermons available yet."
+              text="Check back soon for new messages."
+            />
+          ) : (
+            <>
+              <FeaturedSermon
+                sermon={featuredSermon}
+                onWatch={setSelectedSermon}
+              />
 
-              <p className="mt-6 max-w-2xl text-lg leading-8 text-zinc-500">
-                Watch our latest messages and discover biblical teaching
-                designed to help you grow in faith and follow Jesus in everyday
-                life.
-              </p>
-            </div>
-
-            <a
-              href="#all-sermons"
-              className="inline-flex items-center gap-2 font-semibold text-zinc-900 hover:gap-3"
-            >
-              View All Messages
-              <ArrowRight size={18} />
-            </a>
-          </motion.div>
-
-          {/* FEATURED SERMON */}
-          <motion.div
-            initial={{ opacity: 0, y: 40 }}
-            whileInView={{ opacity: 1, y: 0 }}
-            viewport={{ once: true, amount: 0.15 }}
-            transition={{ duration: 0.7 }}
-            className="mt-16 overflow-hidden rounded-[2rem] bg-zinc-950 text-white shadow-2xl"
-          >
-            <div className="grid lg:grid-cols-[1.15fr_0.85fr]">
-              {/* IMAGE */}
-              <div className="group relative min-h-[420px] overflow-hidden lg:min-h-[560px]">
-                <img
-                  src={sermons[0].image}
-                  alt={sermons[0].title}
-                  className="absolute inset-0 h-full w-full object-cover transition duration-700 group-hover:scale-105"
-                />
-
-                <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent" />
-
-                <button
-                  type="button"
-                  className="absolute left-1/2 top-1/2 flex h-20 w-20 -translate-x-1/2 -translate-y-1/2 items-center justify-center rounded-full bg-amber-300 text-zinc-950 shadow-2xl transition hover:scale-110 hover:bg-amber-200"
-                >
-                  <Play size={28} fill="currentColor" />
-                </button>
-
-                <div className="absolute bottom-8 left-8">
-                  <span className="rounded-full bg-amber-300 px-4 py-2 text-xs font-bold uppercase tracking-[0.16em] text-zinc-950">
-                    Latest Message
-                  </span>
-                </div>
-              </div>
-
-              {/* CONTENT */}
-              <div className="flex flex-col justify-center p-8 sm:p-12 lg:p-14">
-                <p className="text-sm font-semibold uppercase tracking-[0.2em] text-amber-300">
-                  Sunday Message
-                </p>
-
-                <h3 className="mt-5 text-4xl font-semibold tracking-tight sm:text-5xl">
-                  {sermons[0].title}
-                </h3>
-
-                <div className="mt-6 flex flex-wrap gap-x-6 gap-y-3 text-sm text-white/60">
-                  <div className="flex items-center gap-2">
-                    <Mic2 size={16} className="text-amber-300" />
-                    {sermons[0].speaker}
-                  </div>
-
-                  <div className="flex items-center gap-2">
-                    <BookMarked size={16} className="text-amber-300" />
-                    {sermons[0].scripture}
-                  </div>
-
-                  <div className="flex items-center gap-2">
-                    <CalendarDays size={16} className="text-amber-300" />
-                    {sermons[0].date}
-                  </div>
-
-                  <div className="flex items-center gap-2">
-                    <Clock3 size={16} className="text-amber-300" />
-                    {sermons[0].duration}
-                  </div>
-                </div>
-
-                <p className="mt-8 leading-8 text-white/60">
-                  Faith is not simply believing that God exists. It is learning
-                  to trust Him even when we cannot see what comes next. Discover
-                  how God's Word teaches us to walk confidently by faith.
-                </p>
-
-                <div className="mt-9 flex flex-col gap-4 sm:flex-row">
-                  <button
-                    type="button"
-                    className="inline-flex items-center justify-center gap-2 rounded-full bg-amber-300 px-7 py-4 font-semibold text-zinc-950 hover:bg-amber-200"
-                  >
-                    <Play size={18} fill="currentColor" />
-                    Watch Message
-                  </button>
-
-                  <button
-                    type="button"
-                    className="inline-flex items-center justify-center gap-2 rounded-full border border-white/15 px-7 py-4 font-semibold text-white hover:bg-white/10"
-                  >
-                    <BookOpen size={18} />
-                    Message Notes
-                  </button>
-                </div>
-              </div>
-            </div>
-          </motion.div>
-
-          {/* RECENT SERMONS */}
-          <div id="all-sermons" className="mt-20">
-            <div className="mb-8 flex items-center justify-between">
-              <h3 className="text-2xl font-semibold tracking-tight text-zinc-900 sm:text-3xl">
-                Recent Messages
-              </h3>
-
-              <div className="hidden items-center gap-2 text-sm text-zinc-500 sm:flex">
-                <Video size={17} />
-                Watch anytime
-              </div>
-            </div>
-
-            <div className="grid gap-7 md:grid-cols-2 lg:grid-cols-3">
-              {sermons.map((sermon, index) => (
-                <motion.article
-                  key={sermon.id}
-                  initial={{ opacity: 0, y: 35 }}
-                  whileInView={{ opacity: 1, y: 0 }}
-                  viewport={{ once: true }}
-                  transition={{
-                    duration: 0.5,
-                    delay: index * 0.08,
-                  }}
-                  className="group overflow-hidden rounded-[1.75rem] bg-white shadow-sm transition duration-300 hover:-translate-y-2 hover:shadow-xl"
-                >
-                  {/* Thumbnail */}
-                  <div className="relative h-64 overflow-hidden">
-                    <img
-                      src={sermon.image}
-                      alt={sermon.title}
-                      className="h-full w-full object-cover transition duration-700 group-hover:scale-105"
+              {recentSermons.length > 0 && (
+                <div className="mt-16 grid gap-7 md:grid-cols-2 lg:grid-cols-3">
+                  {recentSermons.map((sermon) => (
+                    <SermonCard
+                      key={sermon.id}
+                      sermon={sermon}
+                      onWatch={() => setSelectedSermon(sermon)}
                     />
-
-                    <div className="absolute inset-0 bg-black/20 transition group-hover:bg-black/35" />
-
-                    <div className="absolute inset-0 flex items-center justify-center opacity-0 transition duration-300 group-hover:opacity-100">
-                      <div className="flex h-16 w-16 items-center justify-center rounded-full bg-amber-300 text-zinc-950 shadow-xl">
-                        <Play size={22} fill="currentColor" />
-                      </div>
-                    </div>
-
-                    <div className="absolute bottom-4 right-4 rounded-full bg-black/70 px-3 py-1.5 text-xs font-medium text-white backdrop-blur">
-                      {sermon.duration}
-                    </div>
-                  </div>
-
-                  {/* Card Content */}
-                  <div className="p-7">
-                    <p className="text-xs font-semibold uppercase tracking-[0.18em] text-amber-700">
-                      Sunday Message
-                    </p>
-
-                    <h4 className="mt-3 text-2xl font-semibold tracking-tight text-zinc-900">
-                      {sermon.title}
-                    </h4>
-
-                    <div className="mt-5 space-y-2 text-sm text-zinc-500">
-                      <div className="flex items-center gap-2">
-                        <Mic2 size={15} />
-                        {sermon.speaker}
-                      </div>
-
-                      <div className="flex items-center gap-2">
-                        <BookMarked size={15} />
-                        {sermon.scripture}
-                      </div>
-
-                      <div className="flex items-center gap-2">
-                        <CalendarDays size={15} />
-                        {sermon.date}
-                      </div>
-                    </div>
-
-                    <button
-                      type="button"
-                      className="mt-7 inline-flex items-center gap-2 text-sm font-semibold text-zinc-900"
-                    >
-                      Watch Message
-                      <ArrowRight
-                        size={16}
-                        className="transition-transform group-hover:translate-x-1"
-                      />
-                    </button>
-                  </div>
-                </motion.article>
-              ))}
-            </div>
-          </div>
+                  ))}
+                </div>
+              )}
+            </>
+          )}
         </div>
       </section>
 
-      {/* EVENTS */}
-      <section
-        id="events"
-        className="overflow-hidden bg-white px-6 py-24 sm:py-32 lg:px-8"
-      >
+      {/* ================================================================== */}
+      {/* EVENTS                                                             */}
+      {/* ================================================================== */}
+
+      <section id="events" className="bg-white px-6 py-24 sm:py-32 lg:px-8">
         <div className="mx-auto max-w-7xl">
-          {/* SECTION HEADER */}
-          <motion.div
-            initial={{ opacity: 0, y: 30 }}
-            whileInView={{ opacity: 1, y: 0 }}
-            viewport={{ once: true }}
-            transition={{ duration: 0.6 }}
-            className="flex flex-col gap-8 lg:flex-row lg:items-end lg:justify-between"
-          >
-            <div className="max-w-3xl">
-              <div className="inline-flex items-center gap-2 text-sm font-semibold uppercase tracking-[0.22em] text-amber-700">
-                <CalendarCheck size={17} />
-                What's Happening
-              </div>
+          <SectionHeading
+            eyebrow="What's Happening"
+            title="There's always something to be part of."
+            description="Stay connected with upcoming worship gatherings, prayer meetings, youth gatherings, family events, and more."
+          />
 
-              <h2 className="mt-5 text-4xl font-semibold tracking-tight text-zinc-900 sm:text-5xl lg:text-6xl">
-                There's always something to be part of.
-              </h2>
+          {eventsLoading ? (
+            <LoadingBox icon={CalendarDays} text="Loading upcoming events..." />
+          ) : eventsError ? (
+            <ErrorBox text={eventsError} />
+          ) : !featuredEvent ? (
+            <EmptyBox
+              icon={CalendarDays}
+              title="No upcoming events yet."
+              text="Check back soon for upcoming church gatherings."
+            />
+          ) : (
+            <>
+              <FeaturedEvent event={featuredEvent} />
 
-              <p className="mt-6 max-w-2xl text-lg leading-8 text-zinc-500">
-                From worship gatherings and prayer nights to youth meetings and
-                family fellowship, there's a place for you to connect and grow.
-              </p>
-            </div>
-
-            <a
-              href="#all-events"
-              className="inline-flex items-center gap-2 font-semibold text-zinc-900 hover:gap-3"
-            >
-              View All Events
-              <ArrowRight size={18} />
-            </a>
-          </motion.div>
-
-          {/* FEATURED EVENT */}
-          <motion.div
-            initial={{ opacity: 0, y: 40 }}
-            whileInView={{ opacity: 1, y: 0 }}
-            viewport={{ once: true, amount: 0.15 }}
-            transition={{ duration: 0.7 }}
-            className="mt-16 overflow-hidden rounded-[2.25rem] bg-[#f7f4ed]"
-          >
-            <div className="grid lg:grid-cols-[1.1fr_0.9fr]">
-              {/* IMAGE */}
-              <div className="group relative min-h-[420px] overflow-hidden lg:min-h-[580px]">
-                <img
-                  src={events[0].image}
-                  alt={events[0].title}
-                  className="absolute inset-0 h-full w-full object-cover transition duration-700 group-hover:scale-105"
-                />
-
-                <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/5 to-transparent" />
-
-                {/* DATE BADGE */}
-                <div className="absolute left-6 top-6 rounded-3xl bg-white px-5 py-4 text-center shadow-xl sm:left-8 sm:top-8">
-                  <p className="text-xs font-bold uppercase tracking-[0.18em] text-amber-700">
-                    {events[0].month}
-                  </p>
-
-                  <p className="mt-1 text-4xl font-semibold tracking-tight text-zinc-900">
-                    {events[0].date}
-                  </p>
+              {upcomingEvents.length > 0 && (
+                <div className="mt-16 grid gap-7 md:grid-cols-2 lg:grid-cols-3">
+                  {upcomingEvents.map((event) => (
+                    <EventCard key={event.id} event={event} />
+                  ))}
                 </div>
-
-                <div className="absolute bottom-8 left-8">
-                  <span className="rounded-full border border-white/20 bg-black/40 px-4 py-2 text-xs font-semibold uppercase tracking-[0.15em] text-white backdrop-blur-md">
-                    Featured Event
-                  </span>
-                </div>
-              </div>
-
-              {/* CONTENT */}
-              <div className="flex flex-col justify-center p-8 sm:p-12 lg:p-14">
-                <p className="text-sm font-semibold uppercase tracking-[0.2em] text-amber-700">
-                  {events[0].day}
-                </p>
-
-                <h3 className="mt-4 text-4xl font-semibold tracking-tight text-zinc-900 sm:text-5xl">
-                  {events[0].title}
-                </h3>
-
-                <p className="mt-6 text-base leading-8 text-zinc-600">
-                  {events[0].description}
-                </p>
-
-                {/* EVENT INFO */}
-                <div className="mt-8 space-y-4 border-y border-zinc-200 py-7">
-                  <div className="flex items-start gap-4">
-                    <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-white text-amber-800">
-                      <CalendarDays size={19} />
-                    </div>
-
-                    <div>
-                      <p className="text-xs font-semibold uppercase tracking-widest text-zinc-400">
-                        Date
-                      </p>
-
-                      <p className="mt-1 font-medium text-zinc-900">
-                        {events[0].day}, {events[0].month} {events[0].date}
-                      </p>
-                    </div>
-                  </div>
-
-                  <div className="flex items-start gap-4">
-                    <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-white text-amber-800">
-                      <Clock3 size={19} />
-                    </div>
-
-                    <div>
-                      <p className="text-xs font-semibold uppercase tracking-widest text-zinc-400">
-                        Time
-                      </p>
-
-                      <p className="mt-1 font-medium text-zinc-900">
-                        {events[0].time}
-                      </p>
-                    </div>
-                  </div>
-
-                  <div className="flex items-start gap-4">
-                    <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-white text-amber-800">
-                      <MapPinned size={19} />
-                    </div>
-
-                    <div>
-                      <p className="text-xs font-semibold uppercase tracking-widest text-zinc-400">
-                        Location
-                      </p>
-
-                      <p className="mt-1 font-medium text-zinc-900">
-                        {events[0].location}
-                      </p>
-                    </div>
-                  </div>
-                </div>
-
-                {/* BUTTONS */}
-                <div className="mt-8 flex flex-col gap-4 sm:flex-row">
-                  <button
-                    type="button"
-                    className="inline-flex items-center justify-center gap-2 rounded-full bg-zinc-950 px-7 py-4 font-semibold text-white hover:bg-zinc-800"
-                  >
-                    Event Details
-                    <ArrowRight size={18} />
-                  </button>
-
-                  <button
-                    type="button"
-                    className="inline-flex items-center justify-center gap-2 rounded-full border border-zinc-300 px-7 py-4 font-semibold text-zinc-900 hover:bg-white"
-                  >
-                    <Ticket size={18} />
-                    I'm Interested
-                  </button>
-                </div>
-              </div>
-            </div>
-          </motion.div>
-
-          {/* UPCOMING EVENTS */}
-          <div id="all-events" className="mt-20">
-            <div className="mb-9 flex items-center justify-between">
-              <div>
-                <p className="text-sm font-semibold uppercase tracking-[0.18em] text-amber-700">
-                  Mark Your Calendar
-                </p>
-
-                <h3 className="mt-2 text-3xl font-semibold tracking-tight text-zinc-900">
-                  Upcoming Events
-                </h3>
-              </div>
-
-              <div className="hidden items-center gap-2 text-sm text-zinc-500 md:flex">
-                <Church size={17} />
-                Everyone is welcome
-              </div>
-            </div>
-
-            <div className="grid gap-7 md:grid-cols-2 lg:grid-cols-3">
-              {events.slice(1).map((event, index) => (
-                <motion.article
-                  key={event.id}
-                  initial={{ opacity: 0, y: 35 }}
-                  whileInView={{ opacity: 1, y: 0 }}
-                  viewport={{ once: true }}
-                  transition={{
-                    duration: 0.5,
-                    delay: index * 0.08,
-                  }}
-                  className="group overflow-hidden rounded-[2rem] border border-zinc-200 bg-white transition duration-300 hover:-translate-y-2 hover:shadow-2xl hover:shadow-zinc-200/70"
-                >
-                  {/* IMAGE */}
-                  <div className="relative h-64 overflow-hidden">
-                    <img
-                      src={event.image}
-                      alt={event.title}
-                      className="h-full w-full object-cover transition duration-700 group-hover:scale-105"
-                    />
-
-                    <div className="absolute inset-0 bg-gradient-to-t from-black/55 via-transparent to-transparent" />
-
-                    {/* EVENT DATE */}
-                    <div className="absolute left-5 top-5 rounded-2xl bg-white px-4 py-3 text-center shadow-lg">
-                      <p className="text-[10px] font-bold uppercase tracking-[0.18em] text-amber-700">
-                        {event.month}
-                      </p>
-
-                      <p className="text-2xl font-bold text-zinc-900">
-                        {event.date}
-                      </p>
-                    </div>
-
-                    <div className="absolute bottom-5 left-5">
-                      <span className="text-sm font-medium text-white">
-                        {event.day}
-                      </span>
-                    </div>
-                  </div>
-
-                  {/* CONTENT */}
-                  <div className="p-7">
-                    <h4 className="text-2xl font-semibold tracking-tight text-zinc-900">
-                      {event.title}
-                    </h4>
-
-                    <p className="mt-4 text-sm leading-7 text-zinc-500">
-                      {event.description}
-                    </p>
-
-                    <div className="mt-6 space-y-3 border-t border-zinc-100 pt-6">
-                      <div className="flex items-center gap-3 text-sm text-zinc-500">
-                        <Clock3 size={16} className="text-amber-700" />
-                        {event.time}
-                      </div>
-
-                      <div className="flex items-center gap-3 text-sm text-zinc-500">
-                        <MapPin size={16} className="text-amber-700" />
-                        {event.location}
-                      </div>
-                    </div>
-
-                    <button
-                      type="button"
-                      className="mt-7 inline-flex items-center gap-2 text-sm font-semibold text-zinc-900"
-                    >
-                      View Event
-                      <ArrowRight
-                        size={16}
-                        className="transition-transform group-hover:translate-x-1"
-                      />
-                    </button>
-                  </div>
-                </motion.article>
-              ))}
-            </div>
-          </div>
+              )}
+            </>
+          )}
         </div>
       </section>
 
-      {/* PLAN YOUR VISIT */}
+      {/* ================================================================== */}
+      {/* PLAN VISIT                                                         */}
+      {/* ================================================================== */}
+
       <section
         id="visit"
-        className="relative overflow-hidden bg-zinc-950 px-6 py-24 text-white sm:py-32 lg:px-8"
+        className="bg-zinc-950 px-6 py-24 text-white sm:py-32 lg:px-8"
       >
-        {/* BACKGROUND DECORATION */}
-        <div className="absolute -left-40 top-0 h-[500px] w-[500px] rounded-full bg-amber-300/5 blur-3xl" />
-        <div className="absolute -right-40 bottom-0 h-[500px] w-[500px] rounded-full bg-amber-300/5 blur-3xl" />
+        <div className="mx-auto max-w-7xl">
+          <SectionHeading
+            dark
+            eyebrow="Plan Your Visit"
+            title={`We'd love to welcome you this ${serviceDay}.`}
+            description={`Join us at ${churchName} for worship, God's Word, prayer, and community.`}
+          />
 
-        <div className="relative mx-auto max-w-7xl">
-          {/* SECTION HEADING */}
-          <motion.div
-            initial={{ opacity: 0, y: 30 }}
-            whileInView={{ opacity: 1, y: 0 }}
-            viewport={{ once: true }}
-            transition={{ duration: 0.6 }}
-            className="mx-auto max-w-3xl text-center"
-          >
-            <div className="inline-flex items-center gap-2 text-sm font-semibold uppercase tracking-[0.22em] text-amber-300">
-              <MapPin size={17} />
-              Plan Your Visit
+          <div className="mt-16 grid overflow-hidden rounded-[2rem] border border-white/10 bg-white/5 lg:grid-cols-2">
+            <div className="relative min-h-[520px]">
+              <img
+                src="https://images.unsplash.com/photo-1438032005730-c779502df39b?auto=format&fit=crop&w=1400&q=85"
+                alt={churchName}
+                className="absolute inset-0 h-full w-full object-cover"
+              />
             </div>
 
-            <h2 className="mt-5 text-4xl font-semibold tracking-tight sm:text-5xl lg:text-6xl">
-              We'd love to welcome you this Sunday.
-            </h2>
+            <div className="p-8 sm:p-12">
+              <h3 className="text-4xl font-semibold">
+                Join us this {serviceDay}
+              </h3>
 
-            <p className="mx-auto mt-6 max-w-2xl text-lg leading-8 text-white/60">
-              Visiting a church for the first time can feel unfamiliar. We want
-              to make your visit to New Grace Jesus With Us Church simple,
-              comfortable, and meaningful.
-            </p>
-          </motion.div>
-
-          {/* MAIN VISIT CARD */}
-          <motion.div
-            initial={{ opacity: 0, y: 40 }}
-            whileInView={{ opacity: 1, y: 0 }}
-            viewport={{ once: true, amount: 0.15 }}
-            transition={{ duration: 0.7 }}
-            className="mt-16 overflow-hidden rounded-[2.25rem] border border-white/10 bg-white/5 backdrop-blur"
-          >
-            <div className="grid lg:grid-cols-2">
-              {/* IMAGE */}
-              <div className="relative min-h-[460px] overflow-hidden lg:min-h-[650px]">
-                <img
-                  src="https://images.unsplash.com/photo-1438032005730-c779502df39b?auto=format&fit=crop&w=1400&q=85"
-                  alt="New Grace Jesus With Us Church"
-                  className="absolute inset-0 h-full w-full object-cover"
+              <div className="mt-8 space-y-5">
+                <VisitInfo
+                  icon={Clock3}
+                  label="Service Time"
+                  value={`${serviceDay} • ${serviceTime}`}
                 />
 
-                <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent" />
+                <VisitInfo
+                  icon={MapPinned}
+                  label="Location"
+                  value={churchAddress}
+                />
 
-                <div className="absolute bottom-8 left-8 right-8">
-                  <p className="text-sm font-semibold uppercase tracking-[0.2em] text-amber-300">
-                    You're Invited
-                  </p>
-
-                  <h3 className="mt-3 max-w-lg text-3xl font-semibold sm:text-4xl">
-                    Come as you are. There's a place for you here.
-                  </h3>
-                </div>
-              </div>
-
-              {/* SERVICE INFORMATION */}
-              <div className="flex flex-col justify-center p-8 sm:p-12 lg:p-14">
-                <p className="text-sm font-semibold uppercase tracking-[0.2em] text-amber-300">
-                  Sunday Gathering
-                </p>
-
-                <h3 className="mt-4 text-4xl font-semibold tracking-tight sm:text-5xl">
-                  Join us this Sunday
-                </h3>
-
-                <p className="mt-6 leading-8 text-white/60">
-                  Experience uplifting worship, biblical teaching, prayer, and a
-                  welcoming community centered on Jesus Christ.
-                </p>
-
-                {/* DETAILS */}
-                <div className="mt-9 space-y-5">
-                  {/* TIME */}
-                  <div className="flex items-start gap-4 rounded-2xl border border-white/10 bg-white/5 p-5">
-                    <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-full bg-amber-300 text-zinc-950">
-                      <Clock3 size={20} />
-                    </div>
-
-                    <div>
-                      <p className="text-xs font-semibold uppercase tracking-[0.16em] text-white/40">
-                        Service Time
-                      </p>
-
-                      <p className="mt-1 text-lg font-semibold">
-                        Sunday • 7:30 AM
-                      </p>
-
-                      <p className="mt-1 text-sm text-white/45">
-                        You're welcome to arrive a little early.
-                      </p>
-                    </div>
-                  </div>
-
-                  {/* LOCATION */}
-                  <div className="flex items-start gap-4 rounded-2xl border border-white/10 bg-white/5 p-5">
-                    <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-full bg-amber-300 text-zinc-950">
-                      <MapPinned size={20} />
-                    </div>
-
-                    <div>
-                      <p className="text-xs font-semibold uppercase tracking-[0.16em] text-white/40">
-                        Location
-                      </p>
-
-                      <p className="mt-1 text-lg font-semibold">
-                        New Grace Jesus With Us Church
-                      </p>
-
-                      <p className="mt-1 text-sm leading-6 text-white/45">
-                        Your church address will go here.
-                      </p>
-                    </div>
-                  </div>
-
-                  {/* SERVICE */}
-                  <div className="flex items-start gap-4 rounded-2xl border border-white/10 bg-white/5 p-5">
-                    <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-full bg-amber-300 text-zinc-950">
-                      <Church size={20} />
-                    </div>
-
-                    <div>
-                      <p className="text-xs font-semibold uppercase tracking-[0.16em] text-white/40">
-                        What To Expect
-                      </p>
-
-                      <p className="mt-1 text-lg font-semibold">
-                        Worship • Word • Prayer • Community
-                      </p>
-
-                      <p className="mt-1 text-sm leading-6 text-white/45">
-                        A welcoming service centered on Jesus and God's Word.
-                      </p>
-                    </div>
-                  </div>
-                </div>
-
-                {/* CTA BUTTONS */}
-                <div className="mt-9 flex flex-col gap-4 sm:flex-row">
-                  <a
-                    href="https://maps.app.goo.gl/JGhVvA63GQfv6tGG6"
-                    target="_blank"
-                    rel="noreferrer"
-                    className="inline-flex items-center justify-center gap-2 rounded-full bg-amber-300 px-7 py-4 font-semibold text-zinc-950 hover:bg-amber-200"
-                  >
-                    <Navigation size={18} />
-                    Get Directions
-                  </a>
-
-                  <a
-                    href="#contact"
-                    className="inline-flex items-center justify-center gap-2 rounded-full border border-white/15 px-7 py-4 font-semibold text-white hover:bg-white/10"
-                  >
-                    Ask a Question
-                    <ArrowRight size={18} />
-                  </a>
-                </div>
-              </div>
-            </div>
-          </motion.div>
-
-          {/* WHAT TO EXPECT */}
-          <div className="mt-20">
-            <motion.div
-              initial={{ opacity: 0, y: 25 }}
-              whileInView={{ opacity: 1, y: 0 }}
-              viewport={{ once: true }}
-              transition={{ duration: 0.6 }}
-              className="mb-10 text-center"
-            >
-              <p className="text-sm font-semibold uppercase tracking-[0.2em] text-amber-300">
-                Your First Sunday
-              </p>
-
-              <h3 className="mt-4 text-3xl font-semibold tracking-tight sm:text-4xl">
-                What can I expect?
-              </h3>
-            </motion.div>
-
-            <div className="grid gap-5 md:grid-cols-2 lg:grid-cols-4">
-              {/* WELCOME */}
-              <motion.div
-                initial={{ opacity: 0, y: 30 }}
-                whileInView={{ opacity: 1, y: 0 }}
-                viewport={{ once: true }}
-                transition={{ duration: 0.5 }}
-                className="rounded-[1.75rem] border border-white/10 bg-white/5 p-7"
-              >
-                <div className="flex h-13 w-13 items-center justify-center rounded-2xl bg-amber-300 text-zinc-950">
-                  <Smile size={23} />
-                </div>
-
-                <h4 className="mt-7 text-xl font-semibold">A Warm Welcome</h4>
-
-                <p className="mt-3 text-sm leading-7 text-white/50">
-                  Our church family will be happy to welcome you and help you
-                  feel comfortable from the moment you arrive.
-                </p>
-              </motion.div>
-
-              {/* WORSHIP */}
-              <motion.div
-                initial={{ opacity: 0, y: 30 }}
-                whileInView={{ opacity: 1, y: 0 }}
-                viewport={{ once: true }}
-                transition={{ duration: 0.5, delay: 0.08 }}
-                className="rounded-[1.75rem] border border-white/10 bg-white/5 p-7"
-              >
-                <div className="flex h-13 w-13 items-center justify-center rounded-2xl bg-amber-300 text-zinc-950">
-                  <Music2 size={23} />
-                </div>
-
-                <h4 className="mt-7 text-xl font-semibold">
-                  Meaningful Worship
-                </h4>
-
-                <p className="mt-3 text-sm leading-7 text-white/50">
-                  Join us as we worship Jesus together through music,
-                  thanksgiving, prayer, and praise.
-                </p>
-              </motion.div>
-
-              {/* TEACHING */}
-              <motion.div
-                initial={{ opacity: 0, y: 30 }}
-                whileInView={{ opacity: 1, y: 0 }}
-                viewport={{ once: true }}
-                transition={{ duration: 0.5, delay: 0.16 }}
-                className="rounded-[1.75rem] border border-white/10 bg-white/5 p-7"
-              >
-                <div className="flex h-13 w-13 items-center justify-center rounded-2xl bg-amber-300 text-zinc-950">
-                  <BookOpen size={23} />
-                </div>
-
-                <h4 className="mt-7 text-xl font-semibold">
-                  Biblical Teaching
-                </h4>
-
-                <p className="mt-3 text-sm leading-7 text-white/50">
-                  Hear practical, Christ-centered teaching from Scripture that
-                  encourages and equips you for everyday life.
-                </p>
-              </motion.div>
-
-              {/* CHILDREN */}
-              <motion.div
-                initial={{ opacity: 0, y: 30 }}
-                whileInView={{ opacity: 1, y: 0 }}
-                viewport={{ once: true }}
-                transition={{ duration: 0.5, delay: 0.24 }}
-                className="rounded-[1.75rem] border border-white/10 bg-white/5 p-7"
-              >
-                <div className="flex h-13 w-13 items-center justify-center rounded-2xl bg-amber-300 text-zinc-950">
-                  <Baby size={23} />
-                </div>
-
-                <h4 className="mt-7 text-xl font-semibold">Families Welcome</h4>
-
-                <p className="mt-3 text-sm leading-7 text-white/50">
-                  Children and families are welcome. We'll later add your exact
-                  kids ministry and children's service information here.
-                </p>
-              </motion.div>
-            </div>
-          </div>
-
-          {/* FIRST TIME VISITOR CTA */}
-          <motion.div
-            initial={{ opacity: 0, y: 40 }}
-            whileInView={{ opacity: 1, y: 0 }}
-            viewport={{ once: true }}
-            transition={{ duration: 0.7 }}
-            className="mt-20 rounded-[2.25rem] bg-amber-300 px-7 py-12 text-zinc-950 sm:px-12 lg:px-16"
-          >
-            <div className="flex flex-col gap-10 lg:flex-row lg:items-center lg:justify-between">
-              <div className="max-w-3xl">
-                <div className="flex items-center gap-2 text-sm font-bold uppercase tracking-[0.18em]">
-                  <Coffee size={18} />
-                  First Time Here?
-                </div>
-
-                <h3 className="mt-5 text-3xl font-semibold tracking-tight sm:text-4xl lg:text-5xl">
-                  We'd love the opportunity to meet you.
-                </h3>
-
-                <p className="mt-5 max-w-2xl leading-8 text-zinc-800/75">
-                  Tell us you're planning to visit and our team can help answer
-                  any questions you have before you arrive.
-                </p>
+                <VisitInfo icon={Church} label="Church" value={churchName} />
               </div>
 
               <a
-                href="#contact"
-                className="inline-flex shrink-0 items-center justify-center gap-2 rounded-full bg-zinc-950 px-7 py-4 font-semibold text-white hover:bg-zinc-800"
+                href={mapsUrl}
+                target="_blank"
+                rel="noreferrer"
+                className="mt-9 inline-flex items-center gap-2 rounded-full bg-amber-300 px-7 py-4 font-semibold text-zinc-950"
               >
-                Plan My Visit
-                <ArrowRight size={18} />
+                <Navigation size={18} />
+                Get Directions
               </a>
             </div>
-          </motion.div>
-
-          {/* FAQ LINK */}
-          <div className="mt-10 flex justify-center">
-            <a
-              href="#contact"
-              className="inline-flex items-center gap-2 text-sm font-medium text-white/50 hover:text-white"
-            >
-              <CircleHelp size={17} />
-              Have another question? We'd be happy to help.
-            </a>
           </div>
         </div>
       </section>
 
-      {/* PRAYER REQUEST */}
+      {/* ================================================================== */}
+      {/* PRAYER                                                             */}
+      {/* ================================================================== */}
+
       <section className="bg-[#f7f4ed] px-6 py-24 sm:py-32 lg:px-8">
         <div className="mx-auto max-w-7xl">
-          <motion.div
-            initial={{ opacity: 0, y: 40 }}
-            whileInView={{ opacity: 1, y: 0 }}
-            viewport={{ once: true }}
-            transition={{ duration: 0.7 }}
-            className="overflow-hidden rounded-[2.5rem] bg-amber-300"
-          >
+          <div className="overflow-hidden rounded-[2.5rem] bg-amber-300">
             <div className="grid lg:grid-cols-[0.9fr_1.1fr]">
-              {/* CONTENT */}
-              <div className="flex flex-col justify-center p-8 sm:p-12 lg:p-16">
-                <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-zinc-950 text-white">
-                  <Heart size={24} />
-                </div>
+              <div className="p-8 sm:p-12 lg:p-16">
+                <Heart size={30} />
 
-                <p className="mt-8 text-sm font-bold uppercase tracking-[0.2em] text-zinc-800">
-                  Prayer Changes Things
-                </p>
-
-                <h2 className="mt-4 text-4xl font-semibold tracking-tight text-zinc-950 sm:text-5xl lg:text-6xl">
+                <h2 className="mt-6 text-4xl font-semibold sm:text-5xl">
                   How can we pray for you?
                 </h2>
-
-                <p className="mt-6 max-w-xl text-lg leading-8 text-zinc-800/75">
-                  Whatever you're walking through, you don't have to face it
-                  alone. Our prayer team would be honored to stand with you in
-                  faith and prayer.
-                </p>
-
-                <div className="mt-8 flex items-center gap-3 text-sm font-medium text-zinc-800">
-                  <HeartHandshake size={19} />
-
-                  <span>
-                    Your prayer request will be treated with care and respect.
-                  </span>
-                </div>
               </div>
 
-              {/* PRAYER FORM */}
-              <div className="bg-zinc-950 p-8 text-white sm:p-12 lg:p-14">
-                <h3 className="text-2xl font-semibold">
-                  Send a Prayer Request
-                </h3>
+              <div className="bg-zinc-950 p-8 text-white sm:p-12">
+                <form onSubmit={handlePrayerSubmit} className="space-y-5">
+                  <DarkInput
+                    label="Your Name"
+                    value={prayerForm.name}
+                    onChange={(value) =>
+                      setPrayerForm({
+                        ...prayerForm,
+                        name: value,
+                      })
+                    }
+                  />
 
-                <p className="mt-2 text-sm leading-6 text-white/50">
-                  Share as much or as little as you're comfortable with.
-                </p>
+                  <DarkInput
+                    label="Email"
+                    type="email"
+                    value={prayerForm.email}
+                    onChange={(value) =>
+                      setPrayerForm({
+                        ...prayerForm,
+                        email: value,
+                      })
+                    }
+                  />
 
-                <form
-                  className="mt-8 space-y-5"
-                  onSubmit={(e) => e.preventDefault()}
-                >
-                  <div>
-                    <label
-                      htmlFor="prayer-name"
-                      className="mb-2 block text-sm font-medium text-white/70"
-                    >
-                      Your Name
-                    </label>
+                  <textarea
+                    rows="5"
+                    required
+                    value={prayerForm.prayerRequest}
+                    onChange={(e) =>
+                      setPrayerForm({
+                        ...prayerForm,
+                        prayerRequest: e.target.value,
+                      })
+                    }
+                    placeholder="How can we pray for you?"
+                    className="w-full rounded-2xl border border-white/10 bg-white/5 px-5 py-4"
+                  />
 
+                  <label className="flex gap-3 text-sm text-white/50">
                     <input
-                      id="prayer-name"
-                      type="text"
-                      placeholder="Enter your name"
-                      className="w-full rounded-2xl border border-white/10 bg-white/5 px-5 py-4 text-white outline-none placeholder:text-white/30 focus:border-amber-300"
+                      type="checkbox"
+                      checked={prayerForm.wantsContact}
+                      onChange={(e) =>
+                        setPrayerForm({
+                          ...prayerForm,
+                          wantsContact: e.target.checked,
+                        })
+                      }
                     />
-                  </div>
-
-                  <div>
-                    <label
-                      htmlFor="prayer-email"
-                      className="mb-2 block text-sm font-medium text-white/70"
-                    >
-                      Email
-                    </label>
-
-                    <input
-                      id="prayer-email"
-                      type="email"
-                      placeholder="you@example.com"
-                      className="w-full rounded-2xl border border-white/10 bg-white/5 px-5 py-4 text-white outline-none placeholder:text-white/30 focus:border-amber-300"
-                    />
-                  </div>
-
-                  <div>
-                    <label
-                      htmlFor="prayer-message"
-                      className="mb-2 block text-sm font-medium text-white/70"
-                    >
-                      Prayer Request
-                    </label>
-
-                    <textarea
-                      id="prayer-message"
-                      rows="5"
-                      placeholder="How can we pray for you?"
-                      className="w-full resize-none rounded-2xl border border-white/10 bg-white/5 px-5 py-4 text-white outline-none placeholder:text-white/30 focus:border-amber-300"
-                    />
-                  </div>
-
-                  <label className="flex cursor-pointer items-start gap-3 text-sm text-white/50">
-                    <input type="checkbox" className="mt-1 h-4 w-4 rounded" />
-
-                    <span>
-                      I would like someone from the church to contact me.
-                    </span>
+                    I would like someone from the church to contact me.
                   </label>
 
                   <button
                     type="submit"
-                    className="inline-flex w-full items-center justify-center gap-2 rounded-full bg-amber-300 px-7 py-4 font-semibold text-zinc-950 hover:bg-amber-200"
+                    disabled={prayerSubmitting}
+                    className="flex w-full items-center justify-center gap-2 rounded-full bg-amber-300 px-7 py-4 font-semibold text-zinc-950"
                   >
                     <Send size={18} />
-                    Send Prayer Request
+
+                    {prayerSubmitting ? "Sending..." : "Send Prayer Request"}
                   </button>
+
+                  {prayerStatus && (
+                    <p className="text-center text-sm text-white/60">
+                      {prayerStatus}
+                    </p>
+                  )}
                 </form>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* ================================================================== */}
+      {/* CONTACT                                                            */}
+      {/* ================================================================== */}
+
+      <section id="contact" className="bg-white px-6 py-24 sm:py-32 lg:px-8">
+        <div className="mx-auto grid max-w-7xl gap-16 lg:grid-cols-[0.85fr_1.15fr]">
+          <div>
+            <p className="text-sm font-semibold uppercase tracking-[0.22em] text-amber-700">
+              Get In Touch
+            </p>
+
+            <h2 className="mt-5 text-4xl font-semibold sm:text-5xl">
+              We'd love to hear from you.
+            </h2>
+
+            <div className="mt-10 space-y-5">
+              <ContactInfo icon={Phone} label="Call Us" value={phone} />
+
+              <ContactInfo icon={Mail} label="Email Us" value={email} />
+
+              <ContactInfo
+                icon={MapPin}
+                label="Visit Us"
+                value={churchAddress}
+              />
+            </div>
+
+            <div className="mt-8 flex gap-3">
+              <SocialIcon
+                icon={FaFacebookF}
+                label="Facebook"
+                href={facebookUrl}
+              />
+
+              <SocialIcon
+                icon={FaInstagram}
+                label="Instagram"
+                href={instagramUrl}
+              />
+
+              <SocialIcon icon={FaYoutube} label="YouTube" href={youtubeUrl} />
+            </div>
+          </div>
+
+          <div className="rounded-[2rem] bg-[#f7f4ed] p-7 sm:p-10">
+            <form onSubmit={handleContactSubmit} className="space-y-5">
+              <LightInput
+                label="Name"
+                required
+                value={contactForm.name}
+                onChange={(value) =>
+                  setContactForm({
+                    ...contactForm,
+                    name: value,
+                  })
+                }
+              />
+
+              <LightInput
+                label="Email"
+                type="email"
+                required
+                value={contactForm.email}
+                onChange={(value) =>
+                  setContactForm({
+                    ...contactForm,
+                    email: value,
+                  })
+                }
+              />
+
+              <LightInput
+                label="Phone"
+                value={contactForm.phone}
+                onChange={(value) =>
+                  setContactForm({
+                    ...contactForm,
+                    phone: value,
+                  })
+                }
+              />
+
+              <select
+                value={contactForm.subject}
+                onChange={(e) =>
+                  setContactForm({
+                    ...contactForm,
+                    subject: e.target.value,
+                  })
+                }
+                className="w-full rounded-2xl border border-zinc-200 bg-white px-5 py-4"
+              >
+                <option>General Question</option>
+
+                <option>Plan My Visit</option>
+
+                <option>Ministries</option>
+
+                <option>Books</option>
+
+                <option>Prayer</option>
+
+                <option>Events</option>
+              </select>
+
+              <textarea
+                rows="6"
+                required
+                value={contactForm.message}
+                onChange={(e) =>
+                  setContactForm({
+                    ...contactForm,
+                    message: e.target.value,
+                  })
+                }
+                placeholder="Write your message..."
+                className="w-full rounded-2xl border border-zinc-200 bg-white px-5 py-4"
+              />
+
+              <button
+                type="submit"
+                disabled={contactSubmitting}
+                className="inline-flex items-center gap-2 rounded-full bg-zinc-950 px-7 py-4 font-semibold text-white"
+              >
+                {contactSubmitting ? "Sending..." : "Send Message"}
+
+                <Send size={18} />
+              </button>
+
+              {contactStatus && (
+                <p className="text-sm text-zinc-600">{contactStatus}</p>
+              )}
+            </form>
+          </div>
+        </div>
+      </section>
+
+      {/* ================================================================== */}
+      {/* FOOTER                                                             */}
+      {/* ================================================================== */}
+
+      <footer className="bg-zinc-950 px-6 text-white lg:px-8">
+        <div className="mx-auto max-w-7xl">
+          <div className="grid gap-12 border-b border-white/10 py-16 md:grid-cols-2 lg:grid-cols-4">
+            <div>
+              <h3 className="text-xl font-semibold">{shortName}</h3>
+
+              <p className="mt-2 text-xs uppercase tracking-[0.18em] text-white/40">
+                {churchName}
+              </p>
+
+              <div className="mt-6 flex gap-3">
+                <FooterSocialIcon
+                  icon={FaFacebookF}
+                  label="Facebook"
+                  href={facebookUrl}
+                />
+
+                <FooterSocialIcon
+                  icon={FaInstagram}
+                  label="Instagram"
+                  href={instagramUrl}
+                />
+
+                <FooterSocialIcon
+                  icon={FaYoutube}
+                  label="YouTube"
+                  href={youtubeUrl}
+                />
+              </div>
+            </div>
+
+            <FooterColumn
+              title="Explore"
+              links={[
+                ["About", "#about"],
+                ["Ministries", "#ministries"],
+                ["Books", "#books"],
+                ["Sermons", "#sermons"],
+                ["Events", "#events"],
+                ["Plan Your Visit", "#visit"],
+              ]}
+            />
+
+            <div>
+              <h3 className="font-semibold">Join Us</h3>
+
+              <p className="mt-6 text-sm text-white/50">{serviceDay}</p>
+
+              <p className="mt-2 text-sm text-white/50">{serviceTime}</p>
+
+              <p className="mt-4 text-sm text-white/40">{churchAddress}</p>
+            </div>
+
+            <div>
+              <h3 className="font-semibold">Contact</h3>
+
+              <p className="mt-6 text-sm text-white/50">{phone}</p>
+
+              <p className="mt-3 break-all text-sm text-white/50">{email}</p>
+            </div>
+          </div>
+
+          <div className="py-7 text-sm text-white/35">
+            © {new Date().getFullYear()} {churchName}. All rights reserved.
+          </div>
+        </div>
+      </footer>
+
+      {/* ================================================================== */}
+      {/* MODALS                                                             */}
+      {/* ================================================================== */}
+
+      <AnimatePresence>
+        {selectedSermon && (
+          <SermonVideoModal
+            sermon={selectedSermon}
+            onClose={() => setSelectedSermon(null)}
+          />
+        )}
+      </AnimatePresence>
+
+      <AnimatePresence>
+        {selectedBook && (
+          <BookDetailsModal
+            book={selectedBook}
+            onClose={() => setSelectedBook(null)}
+          />
+        )}
+      </AnimatePresence>
+    </main>
+  );
+}
+
+/* ========================================================================== */
+/* MINISTRY CAROUSEL                                                         */
+/* ========================================================================== */
+
+function MinistryCarousel({ ministries, selectedMinistry, onSelect }) {
+  const scrollRef = useRef(null);
+
+  const scroll = (direction) => {
+    const el = scrollRef.current;
+
+    if (!el) return;
+
+    const card = el.querySelector("[data-ministry-card]");
+
+    const amount = card ? card.getBoundingClientRect().width + 20 : 300;
+
+    el.scrollBy({
+      left: direction === "next" ? amount : -amount,
+      behavior: "smooth",
+    });
+  };
+
+  return (
+    <div className="mt-16">
+      <div className="mb-8 flex items-center justify-between">
+        <h3 className="text-2xl font-semibold">Explore Ministries</h3>
+
+        <div className="hidden gap-2 sm:flex">
+          <CarouselButton icon={ArrowLeft} onClick={() => scroll("previous")} />
+
+          <CarouselButton
+            icon={ArrowRight}
+            dark
+            onClick={() => scroll("next")}
+          />
+        </div>
+      </div>
+
+      <div
+        ref={scrollRef}
+        className="flex snap-x snap-mandatory gap-5 overflow-x-auto pb-5 scrollbar-hide"
+      >
+        {ministries.map((ministry) => {
+          const selected = selectedMinistry?.id === ministry.id;
+
+          return (
+            <button
+              key={ministry.id}
+              data-ministry-card
+              type="button"
+              onClick={() => onSelect(ministry)}
+              className={`relative h-[350px] min-w-[280px] snap-start overflow-hidden rounded-[1.75rem] border bg-zinc-950 text-left ${
+                selected
+                  ? "border-amber-300 ring-4 ring-amber-300/15"
+                  : "border-zinc-200"
+              }`}
+            >
+              {ministry.image_url ? (
+                <>
+                  <img
+                    src={ministry.image_url}
+                    alt=""
+                    className="absolute inset-0 h-full w-full scale-110 object-cover blur-2xl brightness-50"
+                  />
+
+                  <img
+                    src={ministry.image_url}
+                    alt={ministry.title}
+                    className="absolute inset-0 z-[1] h-full w-full object-contain"
+                  />
+                </>
+              ) : (
+                <div className="absolute inset-0 flex items-center justify-center">
+                  <UsersRound size={42} className="text-white/20" />
+                </div>
+              )}
+
+              <div className="absolute inset-0 z-10 bg-gradient-to-t from-black via-black/20 to-transparent" />
+
+              <div className="absolute inset-x-0 bottom-0 z-20 p-5">
+                <h3 className="text-xl font-semibold text-white">
+                  {ministry.title}
+                </h3>
+
+                <p className="mt-2 line-clamp-2 text-xs leading-5 text-white/60">
+                  {ministry.short_description}
+                </p>
+              </div>
+            </button>
+          );
+        })}
+      </div>
+    </div>
+  );
+}
+
+/* ========================================================================== */
+/* MINISTRY SPOTLIGHT                                                        */
+/* ========================================================================== */
+
+function MinistrySpotlight({ ministry }) {
+  if (!ministry) return null;
+
+  return (
+    <motion.article
+      key={ministry.id}
+      initial={{
+        opacity: 0,
+        y: 20,
+      }}
+      animate={{
+        opacity: 1,
+        y: 0,
+      }}
+      className="mt-10 overflow-hidden rounded-[2.5rem] bg-zinc-950 text-white"
+    >
+      <div className="grid lg:grid-cols-2">
+        <div className="relative min-h-[480px]">
+          <BlurredImage
+            src={ministry.image_url}
+            alt={ministry.title}
+            className="absolute inset-0 h-full w-full"
+          />
+        </div>
+
+        <div className="flex flex-col justify-center p-8 sm:p-12">
+          <p className="text-sm uppercase tracking-[0.2em] text-amber-300">
+            Ministry Spotlight
+          </p>
+
+          <h3 className="mt-4 text-4xl font-semibold sm:text-5xl">
+            {ministry.title}
+          </h3>
+
+          {ministry.short_description && (
+            <p className="mt-6 text-lg leading-8 text-white/70">
+              {ministry.short_description}
+            </p>
+          )}
+
+          {ministry.description && (
+            <p className="mt-5 whitespace-pre-line leading-8 text-white/50">
+              {ministry.description}
+            </p>
+          )}
+
+          <a
+            href="#contact"
+            className="mt-8 inline-flex w-fit items-center gap-2 rounded-full bg-amber-300 px-7 py-4 font-semibold text-zinc-950"
+          >
+            I'm Interested
+            <ArrowRight size={18} />
+          </a>
+        </div>
+      </div>
+    </motion.article>
+  );
+}
+
+/* ========================================================================== */
+/* BOOK CAROUSEL                                                             */
+/* ========================================================================== */
+
+function BooksCarousel({ books, onSelectBook }) {
+  const scrollRef = useRef(null);
+
+  const scroll = (direction) => {
+    const el = scrollRef.current;
+
+    if (!el) return;
+
+    const card = el.querySelector("[data-book-card]");
+
+    const amount = card ? card.getBoundingClientRect().width + 24 : 280;
+
+    el.scrollBy({
+      left: direction === "next" ? amount : -amount,
+      behavior: "smooth",
+    });
+  };
+
+  return (
+    <div className="mt-16">
+      <div className="mb-8 flex items-end justify-between">
+        <div>
+          <p className="text-sm font-semibold uppercase tracking-[0.18em] text-amber-700">
+            Our Publications
+          </p>
+
+          <h3 className="mt-2 text-2xl font-semibold sm:text-3xl">
+            Discover our latest books.
+          </h3>
+        </div>
+
+        {books.length > 1 && (
+          <div className="hidden gap-2 sm:flex">
+            <CarouselButton
+              icon={ArrowLeft}
+              onClick={() => scroll("previous")}
+            />
+
+            <CarouselButton
+              icon={ArrowRight}
+              dark
+              onClick={() => scroll("next")}
+            />
+          </div>
+        )}
+      </div>
+
+      <div
+        ref={scrollRef}
+        className="flex snap-x snap-mandatory gap-6 overflow-x-auto pb-6 scrollbar-hide"
+      >
+        {books.map((book) => (
+          <article
+            key={book.id}
+            data-book-card
+            className="min-w-[78%] snap-start sm:min-w-[280px] lg:min-w-[300px]"
+          >
+            <button
+              type="button"
+              onClick={() => onSelectBook(book)}
+              className="w-full text-left"
+            >
+              <div className="relative mx-auto h-[410px] max-w-[270px] overflow-hidden rounded-[1.3rem] bg-zinc-200 shadow-xl">
+                {book.cover_image_url ? (
+                  <>
+                    <img
+                      src={book.cover_image_url}
+                      alt=""
+                      className="absolute inset-0 h-full w-full scale-110 object-cover blur-2xl brightness-75"
+                    />
+
+                    <img
+                      src={book.cover_image_url}
+                      alt={book.title}
+                      className="absolute inset-0 z-[1] h-full w-full object-contain"
+                    />
+                  </>
+                ) : (
+                  <div className="absolute inset-0 flex items-center justify-center bg-zinc-900">
+                    <BookOpen size={46} className="text-white/20" />
+                  </div>
+                )}
+
+                {book.is_featured && (
+                  <span className="absolute right-4 top-4 z-20 rounded-full bg-amber-300 px-3 py-1.5 text-[10px] font-bold uppercase text-zinc-950">
+                    Featured
+                  </span>
+                )}
+              </div>
+
+              <div className="mx-auto mt-6 max-w-[270px]">
+                <h3 className="line-clamp-2 text-xl font-semibold">
+                  {book.title}
+                </h3>
+
+                {book.author && (
+                  <p className="mt-2 text-sm text-zinc-500">By {book.author}</p>
+                )}
+
+                {book.price && (
+                  <p className="mt-3 font-semibold text-amber-700">
+                    {book.price}
+                  </p>
+                )}
+
+                <span className="mt-5 inline-flex items-center gap-2 text-sm font-semibold">
+                  View Book
+                  <ArrowRight size={15} />
+                </span>
+              </div>
+            </button>
+          </article>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+/* ========================================================================== */
+/* BOOK MODAL                                                                */
+/* ========================================================================== */
+
+function BookDetailsModal({ book, onClose }) {
+  return (
+    <>
+      <motion.button
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
+        exit={{ opacity: 0 }}
+        type="button"
+        onClick={onClose}
+        className="fixed inset-0 z-[100] bg-black/80 backdrop-blur-md"
+      />
+
+      <div className="fixed inset-0 z-[110] overflow-y-auto p-4">
+        <div className="flex min-h-full items-center justify-center">
+          <motion.div
+            initial={{
+              opacity: 0,
+              y: 20,
+            }}
+            animate={{
+              opacity: 1,
+              y: 0,
+            }}
+            exit={{
+              opacity: 0,
+              y: 20,
+            }}
+            className="w-full max-w-5xl overflow-hidden rounded-[2rem] bg-white shadow-2xl"
+          >
+            <div className="flex items-center justify-between border-b border-zinc-200 px-6 py-5">
+              <h2 className="font-semibold">{book.title}</h2>
+
+              <button
+                type="button"
+                onClick={onClose}
+                className="flex h-10 w-10 items-center justify-center rounded-full border border-zinc-200"
+              >
+                <X size={19} />
+              </button>
+            </div>
+
+            <div className="grid lg:grid-cols-[0.75fr_1.25fr]">
+              <div className="bg-[#f7f4ed] p-8">
+                <div className="mx-auto h-[430px] max-w-[290px] overflow-hidden rounded-xl bg-zinc-200 shadow-xl">
+                  {book.cover_image_url ? (
+                    <img
+                      src={book.cover_image_url}
+                      alt={book.title}
+                      className="h-full w-full object-contain"
+                    />
+                  ) : (
+                    <div className="flex h-full items-center justify-center">
+                      <BookOpen size={50} className="text-zinc-300" />
+                    </div>
+                  )}
+                </div>
+              </div>
+
+              <div className="p-8 sm:p-12">
+                <h3 className="text-4xl font-semibold sm:text-5xl">
+                  {book.title}
+                </h3>
+
+                {book.author && (
+                  <p className="mt-4 text-lg text-zinc-500">
+                    By <strong>{book.author}</strong>
+                  </p>
+                )}
+
+                <div className="mt-5 flex flex-wrap gap-3">
+                  {book.publication_year && (
+                    <span className="rounded-full bg-zinc-100 px-4 py-2 text-sm">
+                      Published {book.publication_year}
+                    </span>
+                  )}
+
+                  {book.price && (
+                    <span className="rounded-full bg-amber-100 px-4 py-2 text-sm font-semibold text-amber-800">
+                      {book.price}
+                    </span>
+                  )}
+                </div>
+
+                {book.short_description && (
+                  <p className="mt-7 text-lg leading-8 text-zinc-600">
+                    {book.short_description}
+                  </p>
+                )}
+
+                {book.description && (
+                  <p className="mt-6 whitespace-pre-line leading-8 text-zinc-500">
+                    {book.description}
+                  </p>
+                )}
+
+                <div className="mt-9">
+                  {book.purchase_url ? (
+                    <a
+                      href={book.purchase_url}
+                      target="_blank"
+                      rel="noreferrer"
+                      className="inline-flex items-center gap-2 rounded-full bg-zinc-950 px-7 py-4 font-semibold text-white"
+                    >
+                      Get This Book
+                      <ArrowRight size={17} />
+                    </a>
+                  ) : (
+                    <a
+                      href="#contact"
+                      onClick={onClose}
+                      className="inline-flex items-center gap-2 rounded-full bg-zinc-950 px-7 py-4 font-semibold text-white"
+                    >
+                      Enquire About Book
+                      <ArrowRight size={17} />
+                    </a>
+                  )}
+                </div>
               </div>
             </div>
           </motion.div>
         </div>
-      </section>
+      </div>
+    </>
+  );
+}
 
-      {/* CONTACT */}
-      <section id="contact" className="bg-white px-6 py-24 sm:py-32 lg:px-8">
-        <div className="mx-auto max-w-7xl">
-          <div className="grid gap-16 lg:grid-cols-[0.85fr_1.15fr]">
-            {/* CONTACT INFORMATION */}
-            <motion.div
-              initial={{ opacity: 0, x: -35 }}
-              whileInView={{ opacity: 1, x: 0 }}
-              viewport={{ once: true }}
-              transition={{ duration: 0.7 }}
-            >
-              <div className="inline-flex items-center gap-2 text-sm font-semibold uppercase tracking-[0.22em] text-amber-700">
-                <MessageCircle size={17} />
-                Get In Touch
-              </div>
+/* ========================================================================== */
+/* SERMON COMPONENTS                                                        */
+/* ========================================================================== */
 
-              <h2 className="mt-5 text-4xl font-semibold tracking-tight text-zinc-900 sm:text-5xl lg:text-6xl">
-                We'd love to hear from you.
-              </h2>
+function FeaturedSermon({ sermon, onWatch }) {
+  return (
+    <article className="mt-16 overflow-hidden rounded-[2rem] bg-zinc-950 text-white">
+      <div className="grid lg:grid-cols-2">
+        <button
+          type="button"
+          onClick={() => onWatch(sermon)}
+          className="relative aspect-video lg:aspect-auto lg:min-h-[520px]"
+        >
+          <YouTubeThumbnail
+            sermon={sermon}
+            className="absolute inset-0 h-full w-full"
+          />
 
-              <p className="mt-6 max-w-lg text-lg leading-8 text-zinc-500">
-                Have a question about our church, services, ministries, or
-                upcoming events? Reach out and our team will be happy to help.
-              </p>
-
-              <div className="mt-10 space-y-5">
-                {/* PHONE */}
-                <a
-                  href="tel:+910000000000"
-                  className="group flex items-center gap-5 rounded-2xl border border-zinc-200 p-5 hover:border-amber-300"
-                >
-                  <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-full bg-[#f7f4ed] text-amber-800">
-                    <Phone size={20} />
-                  </div>
-
-                  <div>
-                    <p className="text-xs font-semibold uppercase tracking-widest text-zinc-400">
-                      Call Us
-                    </p>
-
-                    <p className="mt-1 font-semibold text-zinc-900">
-                      +91 00000 00000
-                    </p>
-                  </div>
-                </a>
-
-                {/* EMAIL */}
-                <a
-                  href="mailto:hello@newgracechurch.org"
-                  className="group flex items-center gap-5 rounded-2xl border border-zinc-200 p-5 hover:border-amber-300"
-                >
-                  <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-full bg-[#f7f4ed] text-amber-800">
-                    <Mail size={20} />
-                  </div>
-
-                  <div>
-                    <p className="text-xs font-semibold uppercase tracking-widest text-zinc-400">
-                      Email Us
-                    </p>
-
-                    <p className="mt-1 font-semibold text-zinc-900">
-                      hello@newgracechurch.org
-                    </p>
-                  </div>
-                </a>
-
-                {/* LOCATION */}
-                <div className="flex items-center gap-5 rounded-2xl border border-zinc-200 p-5">
-                  <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-full bg-[#f7f4ed] text-amber-800">
-                    <MapPin size={20} />
-                  </div>
-
-                  <div>
-                    <p className="text-xs font-semibold uppercase tracking-widest text-zinc-400">
-                      Visit Us
-                    </p>
-
-                    <p className="mt-1 font-semibold text-zinc-900">
-                      New Grace Jesus With Us Church
-                    </p>
-
-                    <p className="mt-1 text-sm text-zinc-500">
-                      Your church address goes here
-                    </p>
-                  </div>
-                </div>
-              </div>
-
-              {/* SOCIALS */}
-              <div className="mt-10">
-                <p className="text-sm font-semibold text-zinc-900">
-                  Follow our church
-                </p>
-
-                <div className="mt-4 flex gap-3">
-                  <a
-                    href="#"
-                    aria-label="Facebook"
-                    className="flex h-11 w-11 items-center justify-center rounded-full bg-zinc-950 text-white hover:bg-amber-300 hover:text-zinc-950"
-                  >
-                    <FaFacebookF size={18} />
-                    
-                  </a>
-
-                  <a
-                    href="#"
-                    aria-label="Instagram"
-                    className="flex h-11 w-11 items-center justify-center rounded-full bg-zinc-950 text-white hover:bg-amber-300 hover:text-zinc-950"
-                  >
-                    <FaInstagram size={18} />
-                  </a>
-
-                  <a
-                    href="#"
-                    aria-label="YouTube"
-                    className="flex h-11 w-11 items-center justify-center rounded-full bg-zinc-950 text-white hover:bg-amber-300 hover:text-zinc-950"
-                  >
-                    
-                    <FaYoutube size={18} />
-                  </a>
-                </div>
-              </div>
-            </motion.div>
-
-            {/* CONTACT FORM */}
-            <motion.div
-              initial={{ opacity: 0, x: 35 }}
-              whileInView={{ opacity: 1, x: 0 }}
-              viewport={{ once: true }}
-              transition={{ duration: 0.7 }}
-              className="rounded-[2rem] bg-[#f7f4ed] p-7 sm:p-10 lg:p-12"
-            >
-              <p className="text-sm font-semibold uppercase tracking-[0.18em] text-amber-700">
-                Send A Message
-              </p>
-
-              <h3 className="mt-3 text-3xl font-semibold tracking-tight text-zinc-900">
-                How can we help?
-              </h3>
-
-              <form
-                className="mt-8 space-y-5"
-                onSubmit={(e) => e.preventDefault()}
-              >
-                <div className="grid gap-5 sm:grid-cols-2">
-                  <div>
-                    <label
-                      htmlFor="contact-name"
-                      className="mb-2 block text-sm font-medium text-zinc-700"
-                    >
-                      Name
-                    </label>
-
-                    <input
-                      id="contact-name"
-                      type="text"
-                      placeholder="Your name"
-                      className="w-full rounded-2xl border border-zinc-200 bg-white px-5 py-4 text-zinc-900 outline-none placeholder:text-zinc-400 focus:border-amber-400"
-                    />
-                  </div>
-
-                  <div>
-                    <label
-                      htmlFor="contact-email"
-                      className="mb-2 block text-sm font-medium text-zinc-700"
-                    >
-                      Email
-                    </label>
-
-                    <input
-                      id="contact-email"
-                      type="email"
-                      placeholder="Your email"
-                      className="w-full rounded-2xl border border-zinc-200 bg-white px-5 py-4 text-zinc-900 outline-none placeholder:text-zinc-400 focus:border-amber-400"
-                    />
-                  </div>
-                </div>
-
-                <div>
-                  <label
-                    htmlFor="contact-phone"
-                    className="mb-2 block text-sm font-medium text-zinc-700"
-                  >
-                    Phone
-                  </label>
-
-                  <input
-                    id="contact-phone"
-                    type="tel"
-                    placeholder="Your phone number"
-                    className="w-full rounded-2xl border border-zinc-200 bg-white px-5 py-4 text-zinc-900 outline-none placeholder:text-zinc-400 focus:border-amber-400"
-                  />
-                </div>
-
-                <div>
-                  <label
-                    htmlFor="contact-subject"
-                    className="mb-2 block text-sm font-medium text-zinc-700"
-                  >
-                    Subject
-                  </label>
-
-                  <select
-                    id="contact-subject"
-                    className="w-full rounded-2xl border border-zinc-200 bg-white px-5 py-4 text-zinc-900 outline-none focus:border-amber-400"
-                  >
-                    <option>General Question</option>
-                    <option>Plan My Visit</option>
-                    <option>Ministries</option>
-                    <option>Prayer</option>
-                    <option>Events</option>
-                    <option>Other</option>
-                  </select>
-                </div>
-
-                <div>
-                  <label
-                    htmlFor="contact-message"
-                    className="mb-2 block text-sm font-medium text-zinc-700"
-                  >
-                    Message
-                  </label>
-
-                  <textarea
-                    id="contact-message"
-                    rows="6"
-                    placeholder="Write your message..."
-                    className="w-full resize-none rounded-2xl border border-zinc-200 bg-white px-5 py-4 text-zinc-900 outline-none placeholder:text-zinc-400 focus:border-amber-400"
-                  />
-                </div>
-
-                <button
-                  type="submit"
-                  className="inline-flex w-full items-center justify-center gap-2 rounded-full bg-zinc-950 px-7 py-4 font-semibold text-white hover:bg-zinc-800 sm:w-auto"
-                >
-                  Send Message
-                  <Send size={18} />
-                </button>
-              </form>
-            </motion.div>
+          <div className="absolute inset-0 flex items-center justify-center">
+            <div className="flex h-20 w-20 items-center justify-center rounded-full bg-red-600">
+              <Play size={27} fill="currentColor" />
+            </div>
           </div>
+        </button>
+
+        <div className="p-8 sm:p-12">
+          <p className="text-sm uppercase tracking-[0.2em] text-amber-300">
+            Latest Message
+          </p>
+
+          <h3 className="mt-5 text-4xl font-semibold">{sermon.title}</h3>
+
+          {sermon.description && (
+            <p className="mt-6 leading-8 text-white/55">{sermon.description}</p>
+          )}
+
+          <button
+            type="button"
+            onClick={() => onWatch(sermon)}
+            className="mt-8 rounded-full bg-red-600 px-7 py-4 font-semibold"
+          >
+            Watch Message
+          </button>
         </div>
-      </section>
+      </div>
+    </article>
+  );
+}
 
-      {/* FOOTER */}
-      <footer className="bg-zinc-950 px-6 text-white lg:px-8">
-        <div className="mx-auto max-w-7xl">
-          {/* MAIN FOOTER */}
-          <div className="grid gap-12 border-b border-white/10 py-16 sm:py-20 md:grid-cols-2 lg:grid-cols-4">
-            {/* BRAND */}
-            <div className="lg:pr-8">
-              <a href="#home" className="flex items-center gap-3">
-                <div className="flex h-12 w-12 items-center justify-center rounded-full border border-white/15 bg-white/5">
-                  <span className="text-2xl text-amber-300">✝</span>
-                </div>
+function SermonCard({ sermon, onWatch }) {
+  return (
+    <article className="overflow-hidden rounded-[1.75rem] bg-white">
+      <button
+        type="button"
+        onClick={onWatch}
+        className="relative aspect-video w-full"
+      >
+        <YouTubeThumbnail sermon={sermon} className="h-full w-full" />
+      </button>
 
-                <div>
-                  <p className="font-semibold">New Grace</p>
+      <div className="p-6">
+        <h3 className="text-xl font-semibold">{sermon.title}</h3>
+      </div>
+    </article>
+  );
+}
 
-                  <p className="text-xs uppercase tracking-[0.18em] text-white/45">
-                    Jesus With Us Church
-                  </p>
-                </div>
-              </a>
+function SermonVideoModal({ sermon, onClose }) {
+  const embedUrl = getYouTubeEmbedUrl(sermon.youtube_video_id);
 
-              <p className="mt-6 text-sm leading-7 text-white/45">
-                A Christ-centered church where people can encounter Jesus, grow
-                in faith, find community, and experience God's grace.
-              </p>
+  return (
+    <>
+      <motion.div
+        onClick={onClose}
+        className="fixed inset-0 z-[100] bg-black/85"
+      />
 
-              <div className="mt-6 flex gap-3">
-                <a
-                  href="#"
-                  aria-label="Facebook"
-                  className="flex h-10 w-10 items-center justify-center rounded-full border border-white/10 text-white/60 hover:border-amber-300 hover:bg-amber-300 hover:text-zinc-950"
-                >
-                  <FaFacebookF size={17} />
-                </a>
+      <div className="fixed inset-0 z-[110] flex items-center justify-center p-4">
+        <div className="w-full max-w-5xl overflow-hidden rounded-2xl bg-zinc-950">
+          <div className="flex justify-between p-5 text-white">
+            <h2>{sermon.title}</h2>
 
-                <a
-                  href="#"
-                  aria-label="Instagram"
-                  className="flex h-10 w-10 items-center justify-center rounded-full border border-white/10 text-white/60 hover:border-amber-300 hover:bg-amber-300 hover:text-zinc-950"
-                >
-                  <FaInstagram size={17} />
-                </a>
-
-                <a
-                  href="#"
-                  aria-label="YouTube"
-                  className="flex h-10 w-10 items-center justify-center rounded-full border border-white/10 text-white/60 hover:border-amber-300 hover:bg-amber-300 hover:text-zinc-950"
-                >
-                  <FaYoutube size={17} />
-                </a>
-              </div>
-            </div>
-
-            {/* QUICK LINKS */}
-            <div>
-              <h3 className="font-semibold">Explore</h3>
-
-              <div className="mt-6 flex flex-col gap-4 text-sm text-white/50">
-                <a href="#about" className="hover:text-amber-300">
-                  About Us
-                </a>
-
-                <a href="#ministries" className="hover:text-amber-300">
-                  Ministries
-                </a>
-
-                <a href="#sermons" className="hover:text-amber-300">
-                  Sermons
-                </a>
-
-                <a href="#events" className="hover:text-amber-300">
-                  Events
-                </a>
-
-                <a href="#visit" className="hover:text-amber-300">
-                  Plan Your Visit
-                </a>
-              </div>
-            </div>
-
-            {/* SERVICE */}
-            <div>
-              <h3 className="font-semibold">Join Us</h3>
-
-              <div className="mt-6 space-y-5 text-sm">
-                <div className="flex items-start gap-3">
-                  <Clock3
-                    size={17}
-                    className="mt-0.5 shrink-0 text-amber-300"
-                  />
-
-                  <div>
-                    <p className="text-white/80">Sunday Worship</p>
-
-                    <p className="mt-1 text-white/45">10:00 AM</p>
-                  </div>
-                </div>
-
-                <div className="flex items-start gap-3">
-                  <MapPin
-                    size={17}
-                    className="mt-0.5 shrink-0 text-amber-300"
-                  />
-
-                  <div>
-                    <p className="text-white/80">
-                      New Grace Jesus With Us Church
-                    </p>
-
-                    <p className="mt-1 leading-6 text-white/45">
-                      Your church address goes here
-                    </p>
-                  </div>
-                </div>
-              </div>
-            </div>
-
-            {/* CONTACT */}
-            <div>
-              <h3 className="font-semibold">Contact</h3>
-
-              <div className="mt-6 space-y-5 text-sm">
-                <a
-                  href="tel:+910000000000"
-                  className="flex items-center gap-3 text-white/50 hover:text-amber-300"
-                >
-                  <Phone size={17} />
-                  +91 00000 00000
-                </a>
-
-                <a
-                  href="mailto:hello@newgracechurch.org"
-                  className="flex items-center gap-3 text-white/50 hover:text-amber-300"
-                >
-                  <Mail size={17} />
-                  hello@newgracechurch.org
-                </a>
-              </div>
-            </div>
+            <button onClick={onClose}>
+              <X size={20} />
+            </button>
           </div>
 
-          {/* COPYRIGHT */}
-          <div className="flex flex-col gap-4 py-7 text-sm text-white/35 sm:flex-row sm:items-center sm:justify-between">
-            <p>
-              © {new Date().getFullYear()} New Grace Jesus With Us Church. All
-              rights reserved.
-            </p>
-
-            <p>Jesus With Us • Grace For Everyone</p>
-          </div>
+          {embedUrl && (
+            <div className="aspect-video">
+              <iframe
+                src={`${embedUrl}?autoplay=1&rel=0`}
+                title={sermon.title}
+                className="h-full w-full"
+                allow="autoplay; encrypted-media; picture-in-picture"
+                allowFullScreen
+              />
+            </div>
+          )}
         </div>
-      </footer>
-    </main>
+      </div>
+    </>
+  );
+}
+
+function YouTubeThumbnail({ sermon, className = "" }) {
+  const primary = getYouTubeThumbnail(sermon.youtube_video_id);
+
+  const fallback = sermon.youtube_video_id
+    ? `https://img.youtube.com/vi/${sermon.youtube_video_id}/hqdefault.jpg`
+    : "";
+
+  const [imageSrc, setImageSrc] = useState(primary);
+
+  useEffect(() => {
+    setImageSrc(primary);
+  }, [primary]);
+
+  return (
+    <img
+      src={imageSrc || fallback}
+      alt={sermon.title}
+      onError={() => setImageSrc(fallback)}
+      className={`object-cover ${className}`}
+    />
+  );
+}
+
+/* ========================================================================== */
+/* EVENT COMPONENTS                                                         */
+/* ========================================================================== */
+
+function FeaturedEvent({ event }) {
+  return (
+    <article className="mt-16 grid overflow-hidden rounded-[2rem] bg-[#f7f4ed] lg:grid-cols-2">
+      <BlurredImage
+        src={event.image_url}
+        alt={event.title}
+        className="min-h-[450px]"
+      />
+
+      <div className="p-8 sm:p-12">
+        <p className="text-sm uppercase tracking-[0.2em] text-amber-700">
+          Featured Event
+        </p>
+
+        <h3 className="mt-4 text-4xl font-semibold">{event.title}</h3>
+
+        <p className="mt-6 text-zinc-600">{event.description}</p>
+      </div>
+    </article>
+  );
+}
+
+function EventCard({ event }) {
+  return (
+    <article className="overflow-hidden rounded-[2rem] border border-zinc-200">
+      <BlurredImage
+        src={event.image_url}
+        alt={event.title}
+        className="aspect-video"
+      />
+
+      <div className="p-6">
+        <h3 className="text-xl font-semibold">{event.title}</h3>
+      </div>
+    </article>
+  );
+}
+
+/* ========================================================================== */
+/* SHARED SMALL COMPONENTS                                                  */
+/* ========================================================================== */
+
+function SectionHeading({ eyebrow, title, description, dark = false }) {
+  return (
+    <div className="mx-auto max-w-3xl text-center">
+      <p
+        className={
+          dark
+            ? "text-sm uppercase tracking-[0.22em] text-amber-300"
+            : "text-sm uppercase tracking-[0.22em] text-amber-700"
+        }
+      >
+        {eyebrow}
+      </p>
+
+      <h2
+        className={`mt-5 text-4xl font-semibold sm:text-5xl lg:text-6xl ${
+          dark ? "text-white" : "text-zinc-900"
+        }`}
+      >
+        {title}
+      </h2>
+
+      <p
+        className={`mx-auto mt-6 max-w-2xl text-lg leading-8 ${
+          dark ? "text-white/60" : "text-zinc-500"
+        }`}
+      >
+        {description}
+      </p>
+    </div>
+  );
+}
+
+function AboutCard({ icon: Icon, title, description }) {
+  return (
+    <div className="rounded-2xl border border-zinc-200 bg-white p-6">
+      <Icon size={22} className="text-amber-700" />
+
+      <h3 className="mt-4 font-semibold">{title}</h3>
+
+      <p className="mt-2 text-sm text-zinc-500">{description}</p>
+    </div>
+  );
+}
+
+function MissionCard({ number, title, text }) {
+  return (
+    <div className="rounded-3xl border border-white/10 bg-white/5 p-7">
+      <span className="text-amber-300">{number}</span>
+
+      <h3 className="mt-8 text-xl font-semibold">{title}</h3>
+
+      <p className="mt-3 text-sm text-white/55">{text}</p>
+    </div>
+  );
+}
+
+function VisitInfo({ icon: Icon, label, value }) {
+  return (
+    <div className="flex gap-4 rounded-2xl border border-white/10 bg-white/5 p-5">
+      <Icon size={20} className="text-amber-300" />
+
+      <div>
+        <p className="text-xs uppercase text-white/40">{label}</p>
+
+        <p className="mt-1 font-semibold">{value}</p>
+      </div>
+    </div>
+  );
+}
+
+function DarkInput({ label, type = "text", value, onChange }) {
+  return (
+    <div>
+      <label className="mb-2 block text-sm text-white/70">{label}</label>
+
+      <input
+        type={type}
+        value={value}
+        onChange={(e) => onChange(e.target.value)}
+        className="w-full rounded-2xl border border-white/10 bg-white/5 px-5 py-4"
+      />
+    </div>
+  );
+}
+
+function LightInput({
+  label,
+  type = "text",
+  value,
+  onChange,
+  required = false,
+}) {
+  return (
+    <div>
+      <label className="mb-2 block text-sm font-medium">{label}</label>
+
+      <input
+        type={type}
+        required={required}
+        value={value}
+        onChange={(e) => onChange(e.target.value)}
+        className="w-full rounded-2xl border border-zinc-200 bg-white px-5 py-4"
+      />
+    </div>
+  );
+}
+
+function ContactInfo({ icon: Icon, label, value }) {
+  return (
+    <div className="flex gap-5 rounded-2xl border border-zinc-200 p-5">
+      <Icon size={20} className="text-amber-700" />
+
+      <div>
+        <p className="text-xs uppercase text-zinc-400">{label}</p>
+
+        <p className="mt-1 font-semibold">{value}</p>
+      </div>
+    </div>
+  );
+}
+
+function SocialIcon({ icon: Icon, label, href }) {
+  return (
+    <a
+      href={href}
+      target={href !== "#" ? "_blank" : undefined}
+      rel="noreferrer"
+      aria-label={label}
+      className="flex h-11 w-11 items-center justify-center rounded-full bg-zinc-950 text-white"
+    >
+      <Icon size={18} />
+    </a>
+  );
+}
+
+function FooterSocialIcon({ icon: Icon, label, href }) {
+  return <SocialIcon icon={Icon} label={label} href={href} />;
+}
+
+function FooterColumn({ title, links }) {
+  return (
+    <div>
+      <h3 className="font-semibold">{title}</h3>
+
+      <div className="mt-6 flex flex-col gap-4 text-sm text-white/50">
+        {links.map(([label, href]) => (
+          <a key={label} href={href}>
+            {label}
+          </a>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+function CarouselButton({ icon: Icon, onClick, dark = false }) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      className={`flex h-11 w-11 items-center justify-center rounded-full ${
+        dark ? "bg-zinc-950 text-white" : "border border-zinc-200 bg-white"
+      }`}
+    >
+      <Icon size={18} />
+    </button>
+  );
+}
+
+function LoadingBox({ icon: Icon, text }) {
+  return (
+    <div className="mt-16 rounded-2xl bg-white p-12 text-center">
+      <Icon size={34} className="mx-auto animate-pulse text-amber-700" />
+
+      <p className="mt-4 text-zinc-500">{text}</p>
+    </div>
+  );
+}
+
+function ErrorBox({ text }) {
+  return (
+    <div className="mt-16 rounded-2xl bg-red-50 p-10 text-center text-red-700">
+      {text}
+    </div>
+  );
+}
+
+function EmptyBox({ icon: Icon, title, text }) {
+  return (
+    <div className="mt-16 rounded-2xl bg-white p-12 text-center">
+      <Icon size={36} className="mx-auto text-zinc-300" />
+
+      <h3 className="mt-4 text-xl font-semibold">{title}</h3>
+
+      <p className="mt-2 text-zinc-500">{text}</p>
+    </div>
   );
 }
